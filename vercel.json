@@ -1,7 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/abszsmp-logo.webp", "destination": "/abszsmp-logo.svg" },
     { "source": "/store", "destination": "/index.html" },
     { "source": "/track", "destination": "/index.html" },
     { "source": "/product/(.*)", "destination": "/index.html" },
