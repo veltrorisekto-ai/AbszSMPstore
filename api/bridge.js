@@ -1,6 +1,6 @@
 import { sql, send, fail, readBody, qs, getSetting, bridgeKeyValid, audit, discordConfig, discordRequest } from './_lib.js';
 
-const FALLBACK_IMAGE='https://raw.githubusercontent.com/veltrorisekto-ai/AbszSMPstore/main/abszsmp-logo.webp';
+const FALLBACK_IMAGE='https://raw.githubusercontent.com/veltrorisekto-ai/AbszSMPstore/main/abszsmp-logo.svg';
 
 async function announceDelivered(order){
   const cfg=await discordConfig(); if(!cfg.enabled||!cfg.botToken)return;
