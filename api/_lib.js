@@ -145,10 +145,64 @@ export function trustedCommands(items, player, orderCode) {
   return commands;
 }
 
+export async function approvePaymentClaim(code, actorType, actorId) {
+  let order = (await sql`SELECT * FROM orders WHERE order_code=${code} LIMIT 1`)[0];
+  if (!order) throw Object.assign(new Error('Order not found'), { status: 404 });
+
+  if (order.payment_status === 'PAID' && ['QUEUED','DELIVERING','DELIVERED'].includes(order.delivery_status)) {
+    return order;
+  }
+  if (!['CLAIMED','PAID'].includes(order.payment_status)) {
+    throw Object.assign(new Error('Order is not awaiting payment approval'), { status: 409 });
+  }
+
+  const items = await sql`SELECT product_name,quantity,fulfillment FROM order_items WHERE order_id=${order.id} ORDER BY id`;
+  const commands = trustedCommands(items, order.minecraft_name, order.order_code);
+  if (!commands.length) throw Object.assign(new Error('Product fulfillment is not configured'), { status: 409 });
+  const deliveryKey = `order:${order.id}`;
+
+  if (order.payment_status === 'PAID') {
+    await sql`INSERT INTO delivery_jobs(delivery_key,order_id,minecraft_name,platform,commands,status,attempts,updated_at)
+      VALUES(${deliveryKey},${order.id},${order.minecraft_name},${order.platform},${JSON.stringify(commands)}::jsonb,'QUEUED',0,now())
+      ON CONFLICT(delivery_key) DO NOTHING`;
+    if (order.delivery_status === 'LOCKED') {
+      const repaired = await sql`UPDATE orders SET status='DELIVERY_QUEUED',delivery_status='QUEUED',updated_at=now() WHERE id=${order.id} AND delivery_status='LOCKED' RETURNING *`;
+      if (repaired[0]) order = repaired[0];
+    }
+    return order;
+  }
+
+  const changed = await sql`
+    WITH changed AS (
+      UPDATE orders
+      SET status='PAYMENT_APPROVED',payment_status='PAID',delivery_status='QUEUED',
+          approved_at=COALESCE(approved_at,now()),approved_by=${String(actorId)},updated_at=now()
+      WHERE id=${order.id} AND payment_status='CLAIMED'
+      RETURNING *
+    ), inserted AS (
+      INSERT INTO delivery_jobs(delivery_key,order_id,minecraft_name,platform,commands,status,attempts,updated_at)
+      SELECT ${deliveryKey},id,minecraft_name,platform,${JSON.stringify(commands)}::jsonb,'QUEUED',0,now()
+      FROM changed
+      ON CONFLICT(delivery_key) DO NOTHING
+      RETURNING id
+    )
+    SELECT * FROM changed`;
+
+  if (!changed[0]) {
+    order = (await sql`SELECT * FROM orders WHERE id=${order.id} LIMIT 1`)[0];
+    if (order?.payment_status === 'PAID' && ['QUEUED','DELIVERING','DELIVERED'].includes(order.delivery_status)) return order;
+    throw Object.assign(new Error('Order state changed before approval; refresh and review it again'), { status: 409 });
+  }
+
+  await audit(actorType, String(actorId), 'PAYMENT_APPROVED', { order_code: code });
+  return changed[0];
+}
+
 export async function discordConfig() {
   const cfg = await getSetting('discord');
   return {
     enabled: Boolean(cfg.enabled),
+    applicationId: cfg.application_id || null,
     botToken: process.env.DISCORD_BOT_TOKEN || null,
     publicKey: process.env.DISCORD_PUBLIC_KEY || cfg.interaction_public_key || null,
     approvalChannel: cfg.approval_channel_id,
