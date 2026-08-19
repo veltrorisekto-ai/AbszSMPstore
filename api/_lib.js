@@ -41,6 +41,16 @@ export function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
 
+function safeEqualText(a, b) {
+  const left = Buffer.from(String(a ?? ''));
+  const right = Buffer.from(String(b ?? ''));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function unauthorized(message = 'Unauthorized') {
+  return Object.assign(new Error(message), { status: 401 });
+}
+
 function sessionSecret() {
   if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET is not configured');
   return process.env.SESSION_SECRET;
@@ -71,16 +81,21 @@ function cookies(req) {
 
 export async function requireAdmin(req) {
   const token = cookies(req).absz_admin;
-  if (!token) throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  if (!token) throw unauthorized();
   const [payload, sig] = token.split('.');
-  if (!payload || !sig) throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  if (!payload || !sig) throw unauthorized();
   const expected = crypto.createHmac('sha256', sessionSecret()).update(payload).digest('base64url');
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) throw Object.assign(new Error('Unauthorized'), { status: 401 });
-  const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-  if (!data.exp || Date.now() > data.exp) throw Object.assign(new Error('Session expired'), { status: 401 });
+  if (!safeEqualText(sig, expected)) throw unauthorized();
+  let data;
+  try {
+    data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+  } catch {
+    throw unauthorized();
+  }
+  if (!data.exp || Date.now() > data.exp) throw unauthorized('Session expired');
   const rows = await sql`SELECT id,email,session_version FROM admins WHERE id=${data.id} LIMIT 1`;
   const admin = rows[0];
-  if (!admin || Number(admin.session_version) !== Number(data.sv)) throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  if (!admin || Number(admin.session_version) !== Number(data.sv)) throw unauthorized();
   return admin;
 }
 
@@ -158,7 +173,8 @@ export async function discordRequest(path, init = {}) {
 export function bridgeKeyValid(req, minecraftSetting) {
   const supplied = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const expectedHash = minecraftSetting.bridge_api_key_hash || process.env.BRIDGE_API_KEY_HASH || null;
-  return Boolean(supplied && expectedHash && sha256(supplied) === expectedHash);
+  if (!supplied || !expectedHash) return false;
+  return safeEqualText(sha256(supplied), expectedHash);
 }
 
 export function fail(res, err) {
