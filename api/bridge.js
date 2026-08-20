@@ -75,12 +75,14 @@ export default async function handler(req,res){
       }
 
       const attempts=Number(job.attempts||0);
-      const terminal=body.permanent===true||attempts>=10;
+      const offline=String(body.error_code||'')==='PLAYER_OFFLINE';
+      const terminal=!offline&&(body.permanent===true||attempts>=10);
       const next=terminal?'FAILED':'QUEUED';
-      await sql`UPDATE delivery_jobs SET status=${next},last_error=${String(body.error||'Delivery deferred').slice(0,500)},updated_at=now() WHERE id=${id}`;
+      const adjustedAttempts=offline?Math.max(0,attempts-1):attempts;
+      await sql`UPDATE delivery_jobs SET status=${next},attempts=${adjustedAttempts},last_error=${String(body.error||'Delivery deferred').slice(0,500)},updated_at=now() WHERE id=${id}`;
       await sql`UPDATE orders SET status=${terminal?'FAILED':'DELIVERY_QUEUED'},delivery_status=${terminal?'FAILED':'QUEUED'},updated_at=now() WHERE id=${job.order_id} AND delivery_status<>'DELIVERED'`;
-      await audit('MINECRAFT',job.delivery_key,terminal?'DELIVERY_FAILED':'DELIVERY_DEFERRED',{error:String(body.error||'').slice(0,300)});
-      return send(res,200,{ok:true,retry:!terminal});
+      if(!offline)await audit('MINECRAFT',job.delivery_key,terminal?'DELIVERY_FAILED':'DELIVERY_DEFERRED',{error:String(body.error||'').slice(0,300)});
+      return send(res,200,{ok:true,retry:!terminal,deferred_offline:offline});
     }
 
     return send(res,400,{ok:false,error:'Unknown bridge operation'});
