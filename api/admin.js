@@ -217,7 +217,7 @@ export default async function handler(req, res) {
       const rarity = String(body.rarity||'COMMON').toUpperCase();
       const price = Number(body.price_cents);
       const sale = body.sale_price_cents===null||body.sale_price_cents===''?null:Number(body.sale_price_cents);
-      const stock = body.stock===null||body.stock===''?null:Number(body.stock);
+      const stock = body.stock==null||body.stock===''?null:Number(body.stock);
       if (!/^[a-z0-9-]{2,80}$/.test(slug) || !name || !CATEGORIES.includes(category) || !RARITIES.includes(rarity)) return send(res,400,{ok:false,error:'Invalid product details'});
       if (!Number.isInteger(price) || price<0 || (sale!==null && (!Number.isInteger(sale)||sale<0)) || (stock!==null && (!Number.isInteger(stock)||stock<0))) return send(res,400,{ok:false,error:'Invalid price or stock'});
       const commands = Array.isArray(body.commands) ? body.commands.filter(x=>typeof x==='string'&&x.trim()&&x.length<=300).slice(0,20) : [];
