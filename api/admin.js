@@ -180,6 +180,13 @@ export default async function handler(req, res) {
     const admin = await requireAdmin(req);
     const actor = String(admin.id);
 
+    if (op === 'recovery_rotate') {
+      const recovery = randomToken(18);
+      await sql`UPDATE admins SET recovery_code_hash=${sha256(recovery)} WHERE id=${admin.id}`;
+      await audit('ADMIN',actor,'RECOVERY_CODE_ROTATED',{});
+      return send(res,200,{ok:true,recovery_code:recovery,message:'Save this new emergency recovery code now. It is shown once and replaces the previous code.'});
+    }
+
     if (op === 'order_action') {
       const action = String(body.action||'');
       const code = String(body.order_code||'');
