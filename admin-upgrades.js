@@ -42,6 +42,12 @@ adminIntegrations=async function(){
         <button class="btn ghost" id="discordTest">Test Connection</button>
       </div>
 
+      <div class="panel"><h2>Owner Account Recovery</h2>
+        <p class="muted">Generate a replacement emergency recovery code while you are signed in. The old recovery code will stop working.</p>
+        <button class="btn ghost" id="rotateRecoveryBtn">Generate New Recovery Code</button>
+        <div id="recoveryRotateResult"></div>
+      </div>
+
       <div class="panel"><h2>Minecraft Bridge</h2>
         <p class="muted">Bridge key: ${s.minecraft.bridge_api_key_hash?'Configured':'Not generated'}</p>
         <div class="field"><label>BRIDGE API ENDPOINT</label><input value="${esc(s.bridge_endpoint)}" readonly></div>
@@ -63,6 +69,8 @@ adminIntegrations=async function(){
   }catch(e){toast(e.message)}};
 
   document.getElementById('discordTest').onclick=async()=>{try{await document.getElementById('saveIntegrations').onclick();const x=await api('/api/admin',{method:'POST',body:JSON.stringify({op:'discord_test'})});toast(`Discord connected as ${x.bot}`)}catch(e){toast(e.message)}};
+
+  document.getElementById('rotateRecoveryBtn').onclick=async()=>{if(!confirm('Generate a new recovery code? The previous recovery code will stop working.'))return;try{const x=await api('/api/admin',{method:'POST',body:JSON.stringify({op:'recovery_rotate'})});const recovery=x.recovery_code;document.getElementById('recoveryRotateResult').innerHTML=`<div class="notice" style="margin-top:12px"><b>Save this new code now — it stays visible until you leave this page:</b><br><code>${esc(recovery)}</code><div class="actions" style="margin-top:12px"><button class="btn ghost small" type="button" id="copyRotatedRecovery">Copy Code</button></div></div>`;document.getElementById('copyRotatedRecovery').onclick=async()=>{try{await navigator.clipboard.writeText(recovery);toast('Recovery code copied')}catch{toast('Copy the code manually')}}}catch(e){toast(e.message)}};
 
   document.getElementById('bridgeBtn').onclick=async()=>{try{const x=await api('/api/admin',{method:'POST',body:JSON.stringify({op:'bridge_generate'})});document.getElementById('bridgeResult').innerHTML=`<div class="notice" style="margin-top:12px"><b>Copy now — shown once:</b><br><code>${esc(x.bridge_api_key)}</code><br><small>Put this raw key in AbszStoreBridge. The website stores only its hash.</small></div>`}catch(e){toast(e.message)}};
 
