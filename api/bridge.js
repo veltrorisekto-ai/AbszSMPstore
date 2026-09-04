@@ -2,6 +2,13 @@ import { sql, send, fail, readBody, qs, getSetting, bridgeKeyValid, audit, disco
 
 const FALLBACK_IMAGE='https://raw.githubusercontent.com/veltrorisekto-ai/AbszSMPstore/main/abszsmp-logo.webp';
 
+function formatRmFromCents(raw){
+  const cents = BigInt(String(raw ?? '0'));
+  const whole = cents / 100n;
+  const sen = (cents % 100n).toString().padStart(2,'0');
+  return `${whole}.${sen}`;
+}
+
 async function announceDelivered(order){
   const cfg=await discordConfig();
   if(!cfg.enabled||!cfg.botToken)return;
@@ -24,6 +31,29 @@ export default async function handler(req,res){
     if(!bridgeKeyValid(req,mc))return send(res,401,{ok:false,error:'Invalid bridge key'});
     const p=qs(req);
     const op=p.get('op')||'';
+
+    if(req.method==='GET'&&op==='leaderboard'){
+      const requestedLimit=Number.parseInt(p.get('limit')||'10',10);
+      const limit=Number.isFinite(requestedLimit)?Math.max(1,Math.min(10,requestedLimit)):10;
+      const rows=await sql`
+        SELECT
+          lower(btrim(minecraft_name)) AS donor_key,
+          (array_agg(btrim(minecraft_name) ORDER BY created_at DESC,id DESC))[1] AS minecraft_name,
+          COALESCE(sum(total_cents),0)::bigint AS total_cents
+        FROM orders
+        WHERE payment_status='PAID'
+          AND minecraft_name IS NOT NULL
+          AND btrim(minecraft_name)<>''
+          AND total_cents>0
+        GROUP BY lower(btrim(minecraft_name))
+        HAVING COALESCE(sum(total_cents),0)>0
+        ORDER BY total_cents DESC, donor_key ASC
+        LIMIT ${limit}`;
+      return send(res,200,{donors:rows.map(row=>({
+        minecraft_name:String(row.minecraft_name||'').trim(),
+        total_rm:formatRmFromCents(row.total_cents)
+      }))});
+    }
 
     if(req.method==='GET'&&op==='pull'){
       const rows=await sql`
@@ -52,6 +82,7 @@ export default async function handler(req,res){
     if(req.method!=='POST')return send(res,405,{ok:false,error:'Method not allowed'});
     const body=await readBody(req);
     const action=body.op||op;
+    if(action==='leaderboard')return send(res,405,{ok:false,error:'Method not allowed'});
 
     if(action==='heartbeat'){
       await sql`INSERT INTO server_status(id,online,player_count,max_players,version,motd,last_seen_at,updated_at) VALUES(1,true,${Math.max(0,Number(body.player_count||0))},${Math.max(0,Number(body.max_players||0))},${body.version||null},${body.motd||null},now(),now()) ON CONFLICT(id) DO UPDATE SET online=true,player_count=EXCLUDED.player_count,max_players=EXCLUDED.max_players,version=EXCLUDED.version,motd=EXCLUDED.motd,last_seen_at=now(),updated_at=now()`;
