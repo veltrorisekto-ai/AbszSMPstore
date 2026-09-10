@@ -3,9 +3,10 @@ import { sql, send, fail, getSetting, publicProduct } from './_lib.js';
 export default async function handler(req, res) {
   try {
     if (req.method !== 'GET') return send(res, 405, { ok: false, error: 'Method not allowed' });
-    const [store, payment, products, statusRows] = await Promise.all([
+    const [store, payment, heroVideo, products, statusRows] = await Promise.all([
       getSetting('store'),
       getSetting('payment'),
+      getSetting('hero_video'),
       sql`SELECT * FROM products WHERE active=true ORDER BY featured DESC, id ASC`,
       sql`SELECT * FROM server_status WHERE id=1 LIMIT 1`
     ]);
@@ -20,6 +21,12 @@ export default async function handler(req, res) {
         currency: store.currency || 'MYR',
         live: Boolean(store.live)
       },
+      hero_video: heroVideo?.enabled && heroVideo?.url ? {
+        url: heroVideo.url,
+        duration_seconds: Number(heroVideo.duration_seconds || 0) || null,
+        file_name: heroVideo.file_name || null,
+        source: heroVideo.source || null
+      } : null,
       payment: {
         provider: payment.provider || 'Touch n Go QR',
         qr_image: payment.qr_image || null,
