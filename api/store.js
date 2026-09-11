@@ -1,4 +1,39 @@
+import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { sql, send, fail, getSetting, publicProduct } from './_lib.js';
+
+async function playableHeroVideo(heroVideo) {
+  if (!heroVideo?.enabled || !heroVideo?.url) return null;
+
+  let url = heroVideo.url;
+  if (String(url).includes('.private.blob.vercel-storage.com')) {
+    const pathname = heroVideo.pathname || (() => {
+      try { return new URL(url).pathname.replace(/^\//, ''); } catch { return ''; }
+    })();
+
+    if (pathname) {
+      const validUntil = Date.now() + 6 * 60 * 60 * 1000;
+      const token = await issueSignedToken({
+        pathname,
+        operations: ['get', 'head'],
+        validUntil
+      });
+      const signed = await presignUrl(token, {
+        operation: 'get',
+        pathname,
+        access: 'private',
+        validUntil
+      });
+      url = signed.presignedUrl;
+    }
+  }
+
+  return {
+    url,
+    duration_seconds: Number(heroVideo.duration_seconds || 0) || null,
+    file_name: heroVideo.file_name || null,
+    source: heroVideo.source || null
+  };
+}
 
 export default async function handler(req, res) {
   try {
@@ -12,6 +47,7 @@ export default async function handler(req, res) {
     ]);
     const s = statusRows[0] || {};
     const fresh = s.last_seen_at ? (Date.now() - new Date(s.last_seen_at).getTime()) < 90000 : false;
+    const publicHeroVideo = await playableHeroVideo(heroVideo);
     return send(res, 200, {
       ok: true,
       store: {
@@ -21,12 +57,7 @@ export default async function handler(req, res) {
         currency: store.currency || 'MYR',
         live: Boolean(store.live)
       },
-      hero_video: heroVideo?.enabled && heroVideo?.url ? {
-        url: heroVideo.url,
-        duration_seconds: Number(heroVideo.duration_seconds || 0) || null,
-        file_name: heroVideo.file_name || null,
-        source: heroVideo.source || null
-      } : null,
+      hero_video: publicHeroVideo,
       payment: {
         provider: payment.provider || 'Touch n Go QR',
         qr_image: payment.qr_image || null,
