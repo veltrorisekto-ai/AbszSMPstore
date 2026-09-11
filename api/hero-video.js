@@ -1,5 +1,5 @@
-import { handleUpload } from '@vercel/blob/client';
-import { del } from '@vercel/blob';
+import { del, issueSignedToken } from '@vercel/blob';
+import { handleUpload, handleUploadPresigned } from '@vercel/blob/client';
 import { send, fail, readBody, requireAdmin, getSetting, setSetting, audit } from './_lib.js';
 
 const MAX_DURATION_SECONDS = 10 * 60;
@@ -22,22 +22,113 @@ function blobUrl(value) {
   }
 }
 
+function uploadMode() {
+  // New Vercel Blob project connections use short-lived OIDC + BLOB_STORE_ID.
+  // Older connections can still use BLOB_READ_WRITE_TOKEN.
+  if (process.env.BLOB_STORE_ID && process.env.BLOB_WEBHOOK_PUBLIC_KEY) return 'presigned';
+  if (process.env.BLOB_READ_WRITE_TOKEN) return 'legacy';
+  return null;
+}
+
+function readVideoMeta(clientPayload) {
+  let meta = {};
+  try { meta = JSON.parse(clientPayload || '{}'); } catch {}
+  const duration = Number(meta.duration_seconds);
+  if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_DURATION_SECONDS + 0.25) {
+    throw new Error('Video must be 10 minutes or shorter');
+  }
+  const size = Number(meta.size_bytes || 0);
+  if (Number.isFinite(size) && size > MAX_SIZE_BYTES) throw new Error('Video file is too large');
+  return {
+    duration_seconds: duration,
+    file_name: cleanFilename(meta.file_name),
+    size_bytes: Math.max(0, Number.isFinite(size) ? size : 0)
+  };
+}
+
 async function deleteOldBlob(url) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN || !blobUrl(url)) return;
+  if (!blobUrl(url)) return;
   try {
-    await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    const options = process.env.BLOB_READ_WRITE_TOKEN ? { token: process.env.BLOB_READ_WRITE_TOKEN } : {};
+    await del(url, options);
   } catch (err) {
     console.warn('Could not delete previous homepage video blob', err?.message || err);
   }
+}
+
+async function legacyUpload(req, body) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw Object.assign(new Error('Legacy Blob token is not configured'), { status: 503 });
+  if (body.type === 'blob.generate-client-token') await requireAdmin(req);
+
+  return handleUpload({
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+    body,
+    request: req,
+    onBeforeGenerateToken: async (pathname, clientPayload) => {
+      if (!String(pathname || '').startsWith('homepage/')) throw new Error('Invalid homepage video path');
+      const meta = readVideoMeta(clientPayload);
+      return {
+        allowedContentTypes: ALLOWED_CONTENT_TYPES,
+        maximumSizeInBytes: MAX_SIZE_BYTES,
+        addRandomSuffix: true,
+        allowOverwrite: false,
+        cacheControlMaxAge: 60 * 60 * 24 * 7,
+        tokenPayload: JSON.stringify(meta)
+      };
+    },
+    onUploadCompleted: async () => {
+      // Metadata is finalized by the authenticated browser after the upload succeeds.
+    }
+  });
+}
+
+async function presignedUpload(req, body) {
+  if (!process.env.BLOB_STORE_ID || !process.env.BLOB_WEBHOOK_PUBLIC_KEY) {
+    throw Object.assign(new Error('OIDC Blob storage is not fully connected to this project'), { status: 503 });
+  }
+  if (body.type === 'blob.generate-presigned-url') await requireAdmin(req);
+
+  return handleUploadPresigned({
+    body,
+    request: req,
+    webhookPublicKey: process.env.BLOB_WEBHOOK_PUBLIC_KEY,
+    getSignedToken: async (pathname, clientPayload) => {
+      if (!String(pathname || '').startsWith('homepage/')) throw new Error('Invalid homepage video path');
+      const meta = readVideoMeta(clientPayload);
+      const validUntil = Date.now() + 15 * 60 * 1000;
+      const token = await issueSignedToken({
+        pathname,
+        operations: ['put'],
+        allowedContentTypes: ALLOWED_CONTENT_TYPES,
+        maximumSizeInBytes: MAX_SIZE_BYTES,
+        validUntil
+      });
+      return {
+        token,
+        urlOptions: {
+          allowedContentTypes: ALLOWED_CONTENT_TYPES,
+          maximumSizeInBytes: MAX_SIZE_BYTES,
+          validUntil,
+          addRandomSuffix: true,
+          allowOverwrite: false,
+          cacheControlMaxAge: 60 * 60 * 24 * 7,
+          tokenPayload: JSON.stringify(meta)
+        }
+      };
+    }
+    // No upload-completed callback is needed. The authenticated browser finalizes metadata.
+  });
 }
 
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const heroVideo = await getSetting('hero_video');
+      const mode = uploadMode();
       return send(res, 200, {
         ok: true,
-        storage_ready: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+        storage_ready: Boolean(mode),
+        upload_mode: mode,
         max_duration_seconds: MAX_DURATION_SECONDS,
         max_size_bytes: MAX_SIZE_BYTES,
         hero_video: heroVideo?.url ? heroVideo : null
@@ -57,43 +148,21 @@ export default async function handler(req, res) {
     const body = await readBody(req);
 
     if (typeof body?.type === 'string' && body.type.startsWith('blob.')) {
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        return send(res, 503, { ok: false, error: 'Homepage video storage is not connected yet.' });
+      const mode = uploadMode();
+      if (!mode) return send(res, 503, { ok: false, error: 'Homepage video storage is not connected to this project yet.' });
+
+      let result;
+      if (body.type === 'blob.generate-presigned-url') {
+        result = await presignedUpload(req, body);
+      } else if (body.type === 'blob.generate-client-token') {
+        result = await legacyUpload(req, body);
+      } else if (body.type === 'blob.upload-completed') {
+        // Legacy uploads can send signed completion callbacks. Presigned uploads do not
+        // configure a callback in this app because finalization is done separately.
+        result = mode === 'legacy' ? await legacyUpload(req, body) : await presignedUpload(req, body);
+      } else {
+        return send(res, 400, { ok: false, error: 'Unknown Blob upload event' });
       }
-
-      if (body.type === 'blob.generate-client-token') await requireAdmin(req);
-
-      const result = await handleUpload({
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        body,
-        request: req,
-        onBeforeGenerateToken: async (pathname, clientPayload) => {
-          if (!String(pathname || '').startsWith('homepage/')) throw new Error('Invalid homepage video path');
-
-          let meta = {};
-          try { meta = JSON.parse(clientPayload || '{}'); } catch {}
-          const duration = Number(meta.duration_seconds);
-          if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_DURATION_SECONDS + 0.25) {
-            throw new Error('Video must be 10 minutes or shorter');
-          }
-
-          return {
-            allowedContentTypes: ALLOWED_CONTENT_TYPES,
-            maximumSizeInBytes: MAX_SIZE_BYTES,
-            addRandomSuffix: true,
-            allowOverwrite: false,
-            cacheControlMaxAge: 60 * 60 * 24 * 7,
-            tokenPayload: JSON.stringify({
-              duration_seconds: duration,
-              file_name: cleanFilename(meta.file_name),
-              size_bytes: Number(meta.size_bytes || 0)
-            })
-          };
-        },
-        onUploadCompleted: async () => {
-          // Final metadata is saved by the authenticated browser immediately after upload.
-        }
-      });
 
       res.statusCode = 200;
       res.setHeader('content-type', 'application/json; charset=utf-8');
