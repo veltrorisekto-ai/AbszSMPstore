@@ -1,8 +1,7 @@
-import { del, issueSignedToken } from '@vercel/blob';
+import { del, issueSignedToken, presignUrl } from '@vercel/blob';
 import { handleUpload, handleUploadPresigned } from '@vercel/blob/client';
 import { send, fail, readBody, requireAdmin, getSetting, setSetting, audit } from './_lib.js';
 
-// Deployment marker: refresh Blob/OIDC environment after project storage connection.
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SIZE_BYTES = 1024 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -24,11 +23,38 @@ function blobUrl(value) {
 }
 
 function uploadMode() {
-  // New Vercel Blob project connections use short-lived OIDC + BLOB_STORE_ID.
-  // Older connections can still use BLOB_READ_WRITE_TOKEN.
   if (process.env.BLOB_STORE_ID && process.env.BLOB_WEBHOOK_PUBLIC_KEY) return 'presigned';
   if (process.env.BLOB_READ_WRITE_TOKEN) return 'legacy';
   return null;
+}
+
+async function playableHeroVideo(heroVideo) {
+  if (!heroVideo?.url) return null;
+  let url = heroVideo.url;
+
+  if (String(url).includes('.private.blob.vercel-storage.com')) {
+    const pathname = heroVideo.pathname || (() => {
+      try { return new URL(url).pathname.replace(/^\//, ''); } catch { return ''; }
+    })();
+
+    if (pathname) {
+      const validUntil = Date.now() + 6 * 60 * 60 * 1000;
+      const token = await issueSignedToken({
+        pathname,
+        operations: ['get', 'head'],
+        validUntil
+      });
+      const signed = await presignUrl(token, {
+        operation: 'get',
+        pathname,
+        access: 'private',
+        validUntil
+      });
+      url = signed.presignedUrl;
+    }
+  }
+
+  return { ...heroVideo, url };
 }
 
 function readVideoMeta(clientPayload) {
@@ -77,9 +103,7 @@ async function legacyUpload(req, body) {
         tokenPayload: JSON.stringify(meta)
       };
     },
-    onUploadCompleted: async () => {
-      // Metadata is finalized by the authenticated browser after the upload succeeds.
-    }
+    onUploadCompleted: async () => {}
   });
 }
 
@@ -117,7 +141,6 @@ async function presignedUpload(req, body) {
         }
       };
     }
-    // No upload-completed callback is needed. The authenticated browser finalizes metadata.
   });
 }
 
@@ -132,7 +155,7 @@ export default async function handler(req, res) {
         upload_mode: mode,
         max_duration_seconds: MAX_DURATION_SECONDS,
         max_size_bytes: MAX_SIZE_BYTES,
-        hero_video: heroVideo?.url ? heroVideo : null
+        hero_video: await playableHeroVideo(heroVideo)
       });
     }
 
@@ -158,8 +181,6 @@ export default async function handler(req, res) {
       } else if (body.type === 'blob.generate-client-token') {
         result = await legacyUpload(req, body);
       } else if (body.type === 'blob.upload-completed') {
-        // Legacy uploads can send signed completion callbacks. Presigned uploads do not
-        // configure a callback in this app because finalization is done separately.
         result = mode === 'legacy' ? await legacyUpload(req, body) : await presignedUpload(req, body);
       } else {
         return send(res, 400, { ok: false, error: 'Unknown Blob upload event' });
