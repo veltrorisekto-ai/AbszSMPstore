@@ -2,6 +2,7 @@ import { del, issueSignedToken } from '@vercel/blob';
 import { handleUpload, handleUploadPresigned } from '@vercel/blob/client';
 import { send, fail, readBody, requireAdmin, getSetting, setSetting, audit } from './_lib.js';
 
+// Deployment marker: refresh Blob/OIDC environment after project storage connection.
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SIZE_BYTES = 1024 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
