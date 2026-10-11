@@ -9,7 +9,10 @@
       "description": "Join the AbszSMP Bedrock world with your friends.",
       "icon": "⛏️",
       "featured": true,
-      "bedrock": { "host": "AbszSMPbedrock.my.id", "port": 12345 }
+      "bedrock": {
+        "host": "AbszSMPbedrock.my.id",
+        "port": 12345
+      }
     },
     {
       "id": "economy-s6",
@@ -17,16 +20,21 @@
       "subtitle": "Economy • Java & Bedrock",
       "description": "Explore, trade and build your way up in Season 6.",
       "icon": "💎",
-      "java": { "host": "AbszSMP.my.id" },
-      "bedrock": { "host": "AbszSMP.my.id", "port": 19213 }
+      "java": {
+        "host": "AbszSMP.my.id"
+      },
+      "bedrock": {
+        "host": "AbszSMP.my.id",
+        "port": 19213
+      }
     },
     {
       "id": "rpg",
       "name": "AbszoluteCraft RPG",
       "subtitle": "RPG • Java Edition",
-      "description": "Your next adventure begins here.",
+      "description": "The RPG connection address is being updated.",
       "icon": "🛡️",
-      "java": { "host": "basic-4.mineidhost.com", "port": 19169 }
+      "unavailable": true
     }
   ]
 }

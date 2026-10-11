@@ -157,6 +157,10 @@
     const actions=el('div',{className:'actions'});
     if (validEndpoint(server.bedrock)) actions.append(button('🚀 Join Bedrock', 'primary',()=>openJoin(server,'bedrock')));
     if (validEndpoint(server.java)) actions.append(button('🟢 Join Java / Copy IP',server.bedrock?'secondary':'primary',()=>openJoin(server,'java')));
+    if (!validEndpoint(server.java) && !validEndpoint(server.bedrock)) {
+      const unavailable = button('Connection address being updated', 'tertiary', () => {});
+      unavailable.disabled = true;actions.append(unavailable);
+    }
     card.append(actions);return card;
   }
   async function boot() {
@@ -167,7 +171,7 @@
       if (!config || !Array.isArray(config.servers)) throw new Error('Invalid server configuration');
       if (typeof config.discordUrl === 'string' && /^https:\/\/discord\.(gg|com)\//.test(config.discordUrl)) document.getElementById('discordLink').href = config.discordUrl;
       grid.replaceChildren(...config.servers.map(makeCard));
-      document.getElementById('count').textContent = config.servers.length + ' worlds available';
+      document.getElementById('count').textContent = config.servers.filter(s=>validEndpoint(s.java)||validEndpoint(s.bedrock)).length + ' servers ready to join';
       const requested = params.get('server');
       const edition = params.get('edition');
       const selected = config.servers.find(s=>s.id===requested);

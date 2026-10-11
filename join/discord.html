@@ -96,6 +96,7 @@
       container.replaceChildren();
       const intro = document.createElement('h2');intro.textContent = '🎮 ABSZ GAMING COMMUNITY';container.append(intro);
       for (const server of config.servers) {
+        if (!server.java && !server.bedrock) continue;
         const section = document.createElement('div');section.className = 'server';
         const heading = document.createElement('h3');heading.textContent = (server.icon || '🎮') + ' ' + server.name;
         const subtitle = document.createElement('p');subtitle.textContent = server.subtitle;

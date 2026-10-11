@@ -7,6 +7,7 @@ export function makePanel() {
     { type: 10, content: '# 🎮 ABSZ GAMING COMMUNITY\n## JOIN OUR MINECRAFT SERVERS\nPilih server yang kamu mahu main! Java dan Bedrock tersedia.' }
   ];
   for (const server of config.servers) {
+    if (!server.java && !server.bedrock) continue;
     const buttons = [];
     const addresses = [];
     for (const edition of ['java', 'bedrock']) {
