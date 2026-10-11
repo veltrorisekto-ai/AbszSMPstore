@@ -4,7 +4,7 @@
   "servers": [
     {
       "id": "bedrock-smp",
-      "name": "AbszSMP Bedrock",
+      "name": "AbszSMP Bedrock Realms",
       "subtitle": "Survival • Bedrock Edition",
       "description": "Join the AbszSMP Bedrock world with your friends.",
       "icon": "⛏️",
@@ -16,7 +16,7 @@
     },
     {
       "id": "economy-s6",
-      "name": "AbszoluteCraft Season 6",
+      "name": "AbszoluteCraft Economy",
       "subtitle": "Economy • Java & Bedrock",
       "description": "Explore, trade and build your way up in Season 6.",
       "icon": "💎",
@@ -31,10 +31,13 @@
     {
       "id": "rpg",
       "name": "AbszoluteCraft RPG",
-      "subtitle": "RPG • Java Edition",
-      "description": "The RPG connection address is being updated.",
+      "subtitle": "RPG • Java Edition 1.21.1",
+      "description": "Your RPG adventure begins here. Minecraft Java 1.21.1.",
       "icon": "🛡️",
-      "unavailable": true
+      "java": {
+        "host": "AbszRPG.my.id",
+        "port": 19169
+      }
     }
   ]
 }
