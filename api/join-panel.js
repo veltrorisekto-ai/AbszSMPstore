@@ -40,10 +40,13 @@ export default async function handler(req, res) {
     let message;
     try { message = await response.json(); } catch { return send(res, 502, { ok: false, error: 'Discord returned an unexpected response. Check the channel before retrying.' }); }
     if (!/^[0-9]{17,20}$/.test(String(message.id)) || !/^[0-9]{17,20}$/.test(String(message.channel_id))) return send(res, 502, { ok: false, error: 'Discord did not return a message ID. Check the channel before retrying.' });
-    const last = { mode, channel_id: message.channel_id, message_id: message.id, webhook_id: webhookId, posted_at: new Date().toISOString() };
+    let previous = {};
+    try { previous = await getSetting('join_panel'); } catch {}
+    const guildId = message.guild_id || (previous.channel_id === message.channel_id ? previous.guild_id : null);
+    const last = { mode, channel_id: message.channel_id, message_id: message.id, guild_id: guildId || null, webhook_id: webhookId, posted_at: new Date().toISOString() };
     let saved = true;
     try { await setSetting('join_panel', last); } catch { saved = false; }
-    return send(res, 200, { ok: true, updated: Boolean(messageId), saved, ...last, message_url: `https://discord.com/channels/@me/${message.channel_id}/${message.id}` });
+    return send(res, 200, { ok: true, updated: Boolean(messageId), saved, ...last, message_url: `https://discord.com/channels/${guildId || '@me'}/${message.channel_id}/${message.id}` });
   } catch (error) {
     return send(res, error?.status || 500, { ok: false, error: error?.status ? error.message : 'Discord panel setup is unavailable. Check the store database and owner login.' });
   }
