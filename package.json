@@ -7,7 +7,9 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
     "@vercel/blob": "^2.6.1",
+    "@vercel/functions": "3.9.11",
     "bcryptjs": "^3.0.2",
     "tweetnacl": "^1.0.3"
   }
 }
+

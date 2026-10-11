@@ -1,8 +1,23 @@
 import nacl from 'tweetnacl';
+import { waitUntil } from '@vercel/functions';
+import { setTimeout as delay } from 'node:timers/promises';
 import { joinReply } from './_join-panel.js';
 import { sql, send, fail, readRaw, discordConfig, audit, approvePaymentClaim } from './_lib.js';
 
 export const config = { api: { bodyParser: false } };
+
+async function dismissJoinReply(applicationId, token) {
+  await delay(5000);
+  try {
+    const response = await fetch(`https://discord.com/api/v10/webhooks/${applicationId}/${encodeURIComponent(token)}/messages/@original`, {
+      method: 'DELETE', redirect: 'error', signal: AbortSignal.timeout(5000)
+    });
+    // Already dismissed replies need no further cleanup. Never log the token or URL.
+    if (!response.ok && response.status !== 404) console.error('Discord join reply cleanup failed', { status: response.status });
+  } catch {
+    console.error('Discord join reply cleanup could not reach Discord');
+  }
+}
 
 function interaction(res, content, ephemeral=true){
   return send(res,200,{type:4,data:{content,flags:ephemeral?64:0}});
@@ -33,7 +48,15 @@ export default async function handler(req,res){
     const body=JSON.parse(raw||'{}');
     if(body.type===1)return send(res,200,{type:1});
     if(body.type!==3)return interaction(res,'Unsupported Discord interaction.');
-    if(String(body.data?.custom_id||'').startsWith('abszjoin:'))return send(res,200,joinReply(body.data.custom_id));
+    if(String(body.data?.custom_id||'').startsWith('abszjoin:')) {
+      const reply = joinReply(body.data.custom_id);
+      if (reply.data.components && /^[0-9]{17,20}$/.test(String(body.application_id || '')) && typeof body.token === 'string' && body.token.length > 0 && body.token.length <= 2048) {
+        // Keep the function alive; start the five-second timer only after the reply is sent.
+        const finished = new Promise(resolve => res.once('finish', resolve));
+        waitUntil(finished.then(() => dismissJoinReply(body.application_id, body.token)));
+      }
+      return send(res,200,reply);
+    }
     cfg=cfg||await discordConfig();
     if(cfg.approvalChannel&&String(body.channel_id)!==String(cfg.approvalChannel))return interaction(res,'This approval button is not valid in this channel.');
     if(!authorized(body,cfg))return interaction(res,'You are not authorized to approve AbszSMP payments.');
