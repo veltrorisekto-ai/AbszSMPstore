@@ -102,12 +102,12 @@
         const subtitle = document.createElement('p');subtitle.textContent = server.subtitle;
         const links = document.createElement('div');links.className = 'linkrow';
         for (const edition of ['java','bedrock']) if (server[edition]) {
-          const link = document.createElement('a');link.textContent = edition === 'java' ? 'Join Java / Copy IP' : 'Join Bedrock';
+          const link = document.createElement('a');link.textContent = (edition === 'java' ? 'Join Java / Copy IP' : 'Join Bedrock') + ' (Click Here)';
           link.href = '/join/?' + new URLSearchParams({server:server.id,edition});link.target = '_blank';link.rel = 'noopener noreferrer';links.append(link);
         }
         section.append(heading,subtitle,links);container.append(section);
       }
-      const all = document.createElement('a');all.textContent = 'View All Servers';all.href = '/join/';all.className = 'button';container.append(all);
+      const all = document.createElement('a');all.textContent = 'View All Servers (Click Here)';all.href = '/join/';all.className = 'button';container.append(all);
     } catch (error) {container.textContent = error.message;}
   }
   renderPreview();checkLogin();

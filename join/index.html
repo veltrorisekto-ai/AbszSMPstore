@@ -47,6 +47,8 @@
     .btn.secondary {background:#12633e;color:#edfff5;border-color:#2a9861;}
     .btn.tertiary {background:#222137;color:#e2dafa;border-color:#514963;}
     .btn.wide {width:100%;}
+    .btn {flex-direction:column;gap:2px;}
+    .btn .click-hint {font-size:11px;font-weight:650;line-height:1.25;}
     .notice {margin:28px 0 52px;border:1px solid #4d445b;background:#221d32;border-radius:17px;padding:18px 20px;color:#d4cde4;font-size:13px;}
     .notice strong {color:#fff0c7;}
     footer {text-align:center;color:#a6a0b6;padding:12px 0 35px;font-size:12px;}
@@ -119,7 +121,7 @@
       copyStatus.textContent = copied ? '✓ Address copied. Paste it into Minecraft!' : 'Select the address above and copy it manually.';
     }
   }
-  function button(label, cls, action) {return el('button', {className:'btn ' + cls + ' wide', text: label, type:'button', onClick:action});}
+  function button(label, cls, action) {return el('button', {className:'btn ' + cls + ' wide', type:'button', onClick:action}, [el('span',{text:label}),el('span',{className:'click-hint',text:'(Click Here)'})]);}
   function openJoin(server, edition, autoAttempt=false) {
     clearTimeout(launchTimer);
     const endpoint = server[edition];

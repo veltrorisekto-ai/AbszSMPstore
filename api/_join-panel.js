@@ -14,7 +14,7 @@ export function makePanel({ interactive = false } = {}) {
       const endpoint = server[edition];
       if (!endpoint) continue;
       const query = new URLSearchParams({ server: server.id, edition, autojoin: '1' });
-      const label = edition === 'bedrock' ? 'Join Bedrock' : 'Join Java / Copy IP';
+      const label = (edition === 'bedrock' ? 'Join Bedrock' : 'Join Java / Copy IP') + ' (Click Here)';
       buttons.push(interactive
         ? { type: 2, style: 3, label, emoji: { name: edition === 'bedrock' ? '⛏️' : '🟢' }, custom_id: `abszjoin:${server.id}:${edition}` }
         : { type: 2, style: 5, label, url: JOIN_SITE + '?' + query });
@@ -25,8 +25,8 @@ export function makePanel({ interactive = false } = {}) {
   }
   children.push({ type: 14, divider: true, spacing: 1 });
   children.push({ type: 1, components: [interactive
-    ? { type: 2, style: 3, label: 'View All Servers', emoji: { name: '🌍' }, custom_id: 'abszjoin:all' }
-    : { type: 2, style: 5, label: 'View All Servers', url: JOIN_SITE }] });
+    ? { type: 2, style: 3, label: 'View All Servers (Click Here)', emoji: { name: '🌍' }, custom_id: 'abszjoin:all' }
+    : { type: 2, style: 5, label: 'View All Servers (Click Here)', url: JOIN_SITE }] });
   children.push({ type: 10, content: interactive ? 'Tap a green button for your private join link. Bedrock opens Minecraft on supported devices; Java players copy the server IP.' : 'Bedrock can open Minecraft on supported devices. Java players copy the IP into Multiplayer → Direct Connection.' });
   return { flags: 32768, allowed_mentions: { parse: [] }, components: [{ type: 17, accent_color: 0x2ecc71, components: children }] };
 }
@@ -45,7 +45,7 @@ export function webhookEndpoint(value, messageId = '') {
 export function joinReply(customId) {
   if (customId === 'abszjoin:all') return { type: 4, data: {
     flags: 64, allowed_mentions: { parse: [] }, content: '🌍 Choose your Minecraft server below.',
-    components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Open Server Selector', url: JOIN_SITE }] }]
+    components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Open Server Selector (Click Here)', url: JOIN_SITE }] }]
   } };
   const match = String(customId).match(/^abszjoin:([a-z0-9-]+):(java|bedrock)$/);
   const server = match && config.servers.find(s => s.id === match[1]);
@@ -57,6 +57,6 @@ export function joinReply(customId) {
   return { type: 4, data: {
     flags: 64, allowed_mentions: { parse: [] },
     content: `**${server.name}**\n${server.subtitle}\nServer address: \`${address}\`\n${edition === 'bedrock' ? 'Open your private join page to launch Minecraft or copy the host and port.' : 'Open your private join page to copy the IP into Minecraft → Multiplayer → Direct Connection.'}`,
-    components: [{ type: 1, components: [{ type: 2, style: 5, label: edition === 'bedrock' ? 'Open Bedrock Join Page' : 'Open Java / Copy IP', url: JOIN_SITE + '?' + query }] }]
+    components: [{ type: 1, components: [{ type: 2, style: 5, label: (edition === 'bedrock' ? 'Open Bedrock Join Page' : 'Open Java / Copy IP') + ' (Click Here)', url: JOIN_SITE + '?' + query }] }]
   } };
 }
