@@ -1,4 +1,5 @@
 import nacl from 'tweetnacl';
+import { joinReply } from './_join-panel.js';
 import { sql, send, fail, readRaw, discordConfig, audit, approvePaymentClaim } from './_lib.js';
 
 export const config = { api: { bodyParser: false } };
@@ -22,15 +23,18 @@ export default async function handler(req,res){
     const raw=await readRaw(req);
     const sig=String(req.headers['x-signature-ed25519']||'');
     const ts=String(req.headers['x-signature-timestamp']||'');
-    const cfg=await discordConfig();
-    if(!cfg.publicKey||!sig||!ts)return send(res,401,{error:'Invalid signature'});
+    let cfg;
+    const publicKey=process.env.DISCORD_PUBLIC_KEY || (cfg=await discordConfig()).publicKey;
+    if(!publicKey||!sig||!ts)return send(res,401,{error:'Invalid signature'});
     let verified=false;
-    try{verified=nacl.sign.detached.verify(Buffer.from(ts+raw),Buffer.from(sig,'hex'),Buffer.from(cfg.publicKey,'hex'));}catch{}
+    try{verified=nacl.sign.detached.verify(Buffer.from(ts+raw),Buffer.from(sig,'hex'),Buffer.from(publicKey,'hex'));}catch{}
     if(!verified)return send(res,401,{error:'Invalid signature'});
 
     const body=JSON.parse(raw||'{}');
     if(body.type===1)return send(res,200,{type:1});
     if(body.type!==3)return interaction(res,'Unsupported Discord interaction.');
+    if(String(body.data?.custom_id||'').startsWith('abszjoin:'))return send(res,200,joinReply(body.data.custom_id));
+    cfg=cfg||await discordConfig();
     if(cfg.approvalChannel&&String(body.channel_id)!==String(cfg.approvalChannel))return interaction(res,'This approval button is not valid in this channel.');
     if(!authorized(body,cfg))return interaction(res,'You are not authorized to approve AbszSMP payments.');
 
@@ -66,3 +70,4 @@ export default async function handler(req,res){
     return fail(res,err);
   }
 }
+

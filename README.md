@@ -43,6 +43,8 @@ AbszStoreBridge must send the one-time bridge key as a Bearer token, heartbeat r
 - Owner posting screen: https://abszsmp.online/join/discord.html (also linked in owner navigation)
 - Server addresses: `join/servers.json`; carried over from the supplied join-panel package. Minecraft server connectivity is not validated by a website deployment.
 - Sign in at `/admin/login`, then use the posting screen with a channel webhook or the existing `DISCORD_BOT_TOKEN` and a channel ID. Webhook URLs are used for one request and never persisted.
-- All posts require an owner session and a same-origin JSON request. Link buttons use public HTTPS URLs, Components V2, and suppress mentions. The bot token never reaches the browser.
+- All posts require an owner session and a same-origin JSON request. Bot panels use green interaction buttons and private HTTPS join links; webhook panels use direct HTTPS link buttons. Both use Components V2 and suppress mentions. The bot token never reaches the browser.
 - Use the returned message ID to update an existing panel with the same bot or webhook. Pin the message in Discord. The website does not post automatically during deployment.
 - Bedrock attempts the built-in Minecraft URI handler with manual copy fallbacks. Java copies its address for Multiplayer → Direct Connection.
+
+The green join buttons are handled before payment approval authorization, so ordinary members can use them. Requests still require a valid Discord Ed25519 signature. The bot application interaction endpoint is `https://abszsmp.online/api/discord`.
