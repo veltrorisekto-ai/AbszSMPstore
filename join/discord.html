@@ -7,6 +7,7 @@
   <title>Post Discord Join Panel | Absz</title>
   <style>
     *{box-sizing:border-box}body{margin:0;background:#0b0a14;color:#f7f5ff;font:16px/1.6 system-ui,sans-serif}main{max-width:860px;margin:auto;padding:30px 20px 60px}a{color:#e0c8ff}h1{font-size:clamp(28px,5vw,42px);line-height:1.15}h2{font-size:20px}p{color:#cbc5db}section{padding:24px;border:1px solid #49405e;border-radius:18px;background:#1c182b;margin:24px 0}label{display:block;font-weight:700;margin:16px 0 5px}input,select{display:block;width:100%;border:1px solid #65577f;background:#100e1b;color:white;padding:12px;border-radius:9px;font:inherit}button,.button{display:inline-block;background:#248046;color:#fff;border:0;padding:12px 18px;border-radius:9px;font:700 15px system-ui;cursor:pointer;text-decoration:none}button:disabled{opacity:.5;cursor:wait}.hint{font-size:13px;color:#b9afcb}.result{white-space:pre-wrap;overflow-wrap:anywhere;color:#aae8b7}.preview{background:#242429}.server{border-top:1px solid #50505a;padding:16px 0}.linkrow{display:flex;gap:8px;flex-wrap:wrap}.linkrow a{background:#248046;color:white;font-size:13px;padding:8px 12px;border-radius:7px;text-decoration:none}#modeHelp{margin-top:5px}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ffd181;outline-offset:3px}[hidden]{display:none!important}
+  .preview .linkrow a,.preview .button{background:#4e5058}
   </style>
 </head>
 <body><main>
@@ -14,7 +15,7 @@
   <h1>Put your server selector in Discord.</h1>
   <p>Preview the panel below, choose your channel, then post it. Sign in with your store owner account to publish.</p>
   <section id="loginSection" hidden><h2>Owner sign-in required</h2><p>Sign in to your store first, then return to this page.</p><a class="button" href="/admin/login">Sign in</a> <button id="checkLogin" type="button">I’m signed in — check again</button></section>
-  <section class="preview" aria-labelledby="previewTitle"><h2 id="previewTitle">Discord panel preview</h2><div id="preview">Loading server list…</div><p class="hint">The Store Bot posts green buttons. Players receive a private join link after clicking. Channel webhooks use Discord’s gray direct-link buttons.</p></section>
+  <section class="preview" aria-labelledby="previewTitle"><h2 id="previewTitle">Discord panel preview</h2><div id="preview">Loading server list…</div><p class="hint">Each button opens its join page directly, without an extra bot message. Bedrock attempts to launch Minecraft; Java provides the server IP.</p></section>
   <section><h2>Choose where to post</h2>
     <form id="panelForm">
       <label for="mode">Connection</label><select id="mode"><option value="webhook">Channel Webhook — no bot needed</option><option value="bot">Existing Store Bot</option></select>
@@ -41,7 +42,7 @@
     document.getElementById('webhookFields').hidden = mode.value !== 'webhook';
     document.getElementById('botFields').hidden = mode.value !== 'bot';
     webhook.required = mode.value === 'webhook';channel.required = mode.value === 'bot';
-    document.getElementById('modeHelp').textContent = mode.value === 'webhook' ? 'Posts gray direct-link buttons as the webhook for the channel you choose.' : botConfigured ? 'Uses your existing bot for green buttons and private join links.' : 'The store bot is not configured. Use Channel Webhook, or add DISCORD_BOT_TOKEN in Vercel.';
+    document.getElementById('modeHelp').textContent = mode.value === 'webhook' ? 'Posts gray direct-link buttons as the webhook for the channel you choose.' : botConfigured ? 'Uses your existing bot to post direct join links without an extra reply.' : 'The store bot is not configured. Use Channel Webhook, or add DISCORD_BOT_TOKEN in Vercel.';
     post.disabled = !authenticated || (mode.value === 'bot' && !botConfigured);
     post.textContent = message.value.trim() ? 'Update panel in Discord' : 'Post panel to Discord';
   }
