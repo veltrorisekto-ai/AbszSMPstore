@@ -35,3 +35,14 @@ After the first deployment, open `/admin/login`. If no owner exists, the site pr
 ## Minecraft delivery
 
 AbszStoreBridge must send the one-time bridge key as a Bearer token, heartbeat regularly, pull queued delivery jobs, execute only the commands returned by the trusted store backend, and ACK success/failure. Delivery jobs are idempotent and stale in-progress jobs can be reclaimed after a worker interruption.
+
+
+## Minecraft server selector and Discord join panel
+
+- Public selector: https://abszsmp.online/join/
+- Owner posting screen: https://abszsmp.online/join/discord.html (also linked in owner navigation)
+- Server addresses: `join/servers.json`; carried over from the supplied join-panel package. Minecraft server connectivity is not validated by a website deployment.
+- Sign in at `/admin/login`, then use the posting screen with a channel webhook or the existing `DISCORD_BOT_TOKEN` and a channel ID. Webhook URLs are used for one request and never persisted.
+- All posts require an owner session and a same-origin JSON request. Link buttons use public HTTPS URLs, Components V2, and suppress mentions. The bot token never reaches the browser.
+- Use the returned message ID to update an existing panel with the same bot or webhook. Pin the message in Discord. The website does not post automatically during deployment.
+- Bedrock attempts the built-in Minecraft URI handler with manual copy fallbacks. Java copies its address for Multiplayer → Direct Connection.

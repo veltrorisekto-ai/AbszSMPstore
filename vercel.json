@@ -1,11 +1,37 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/store", "destination": "/index.html" },
-    { "source": "/track", "destination": "/index.html" },
-    { "source": "/product/(.*)", "destination": "/index.html" },
-    { "source": "/checkout/(.*)", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/admin/(.*)", "destination": "/index.html" }
+    {
+      "source": "/join",
+      "destination": "/join/index.html"
+    },
+    {
+      "source": "/join/",
+      "destination": "/join/index.html"
+    },
+    {
+      "source": "/store",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/track",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/product/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/checkout/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

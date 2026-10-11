@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Post Discord Join Panel | Absz</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0b0a14;color:#f7f5ff;font:16px/1.6 system-ui,sans-serif}main{max-width:860px;margin:auto;padding:30px 20px 60px}a{color:#e0c8ff}h1{font-size:clamp(28px,5vw,42px);line-height:1.15}h2{font-size:20px}p{color:#cbc5db}section{padding:24px;border:1px solid #49405e;border-radius:18px;background:#1c182b;margin:24px 0}label{display:block;font-weight:700;margin:16px 0 5px}input,select{display:block;width:100%;border:1px solid #65577f;background:#100e1b;color:white;padding:12px;border-radius:9px;font:inherit}button,.button{display:inline-block;background:#e5b8ff;color:#21132e;border:0;padding:12px 18px;border-radius:9px;font:700 15px system-ui;cursor:pointer;text-decoration:none}button:disabled{opacity:.5;cursor:wait}.hint{font-size:13px;color:#b9afcb}.result{white-space:pre-wrap;overflow-wrap:anywhere;color:#aae8b7}.preview{background:#242429}.server{border-top:1px solid #50505a;padding:16px 0}.linkrow{display:flex;gap:8px;flex-wrap:wrap}.linkrow a{background:#41414b;color:white;font-size:13px;padding:8px 12px;border-radius:7px;text-decoration:none}#modeHelp{margin-top:5px}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ffd181;outline-offset:3px}[hidden]{display:none!important}
+  </style>
+</head>
+<body><main>
+  <a href="/join/">← Minecraft servers</a> · <a href="/admin">Store owner panel</a>
+  <h1>Put your server selector in Discord.</h1>
+  <p>Preview the panel below, choose your channel, then post it. Sign in with your store owner account to publish.</p>
+  <section id="loginSection" hidden><h2>Owner sign-in required</h2><p>Sign in to your store first, then return to this page.</p><a class="button" href="/admin/login">Sign in</a> <button id="checkLogin" type="button">I’m signed in — check again</button></section>
+  <section class="preview" aria-labelledby="previewTitle"><h2 id="previewTitle">Discord panel preview</h2><div id="preview">Loading server list…</div><p class="hint">Discord displays these as link buttons. Players open the public join page; no bot command is needed.</p></section>
+  <section><h2>Choose where to post</h2>
+    <form id="panelForm">
+      <label for="mode">Connection</label><select id="mode"><option value="webhook">Channel Webhook — no bot needed</option><option value="bot">Existing Store Bot</option></select>
+      <div id="modeHelp" class="hint"></div>
+      <div id="webhookFields"><label for="webhook">Discord webhook URL</label><input id="webhook" type="password" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/…"><p class="hint">In your chosen Discord channel: Edit Channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Paste it here. The webhook is used only for this request and is not saved.</p></div>
+      <div id="botFields" hidden><label for="channel">Discord channel ID</label><input id="channel" inputmode="numeric" autocomplete="off" value="1558945690170953809" placeholder="Right-click the channel → Copy Channel ID"><p class="hint">Enable Discord Settings → Advanced → Developer Mode, then copy the channel ID. Your store bot needs View Channel and Send Messages there.</p></div>
+      <label for="message">Message ID to update (optional)</label><input id="message" inputmode="numeric" autocomplete="off" placeholder="Leave blank to post a new panel"><p class="hint">To refresh an existing panel, enter its message ID and use the same bot or webhook that created it.</p>
+      <button id="post" type="submit" disabled>Post panel to Discord</button>
+      <p id="status" class="result" role="status" aria-live="polite">Checking owner sign-in…</p><a id="messageLink" target="_blank" rel="noopener noreferrer" hidden>Open posted Discord message →</a>
+    </form>
+  </section>
+</main>
+<script>
+  'use strict';
+  const form = document.getElementById('panelForm');
+  const post = document.getElementById('post');
+  const status = document.getElementById('status');
+  const mode = document.getElementById('mode');
+  const message = document.getElementById('message');
+  const webhook = document.getElementById('webhook');
+  const channel = document.getElementById('channel');
+  let authenticated = false, botConfigured = false;
+  function refreshForm() {
+    document.getElementById('webhookFields').hidden = mode.value !== 'webhook';
+    document.getElementById('botFields').hidden = mode.value !== 'bot';
+    webhook.required = mode.value === 'webhook';channel.required = mode.value === 'bot';
+    document.getElementById('modeHelp').textContent = mode.value === 'webhook' ? 'Posts as the webhook for the channel you choose.' : botConfigured ? 'Uses the private bot token already configured on your store.' : 'The store bot is not configured. Use Channel Webhook, or add DISCORD_BOT_TOKEN in Vercel.';
+    post.disabled = !authenticated || (mode.value === 'bot' && !botConfigured);
+    post.textContent = message.value.trim() ? 'Update panel in Discord' : 'Post panel to Discord';
+  }
+  mode.onchange = () => { message.value = '';refreshForm(); };
+  message.oninput = refreshForm;
+  channel.oninput = () => {message.value = '';refreshForm();};
+  webhook.oninput = () => {message.value = '';refreshForm();};
+  async function checkLogin() {
+    post.disabled = true;
+    try {
+      const response = await fetch('/api/join-panel', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw Object.assign(new Error(data.error || 'Owner sign-in could not be checked.'), { status: response.status });
+      authenticated = true;botConfigured = data.bot_configured;
+      if (botConfigured) mode.value = 'bot';
+      document.getElementById('loginSection').hidden = true;
+      status.textContent = 'Ready. Select your channel or paste its webhook above.';
+      if (data.last?.mode === 'bot' && botConfigured && data.last.channel_id === channel.value) {
+        mode.value = 'bot';channel.value = data.last.channel_id;message.value = data.last.message_id;
+        status.textContent = 'Your previous bot panel is selected for update. Clear the message ID to post a new panel.';
+      }
+    } catch (error) {
+      authenticated = false;
+      document.getElementById('loginSection').hidden = false;
+      status.textContent = error.status === 401 ? 'Sign in to your store owner account, then check again.' : error.message;
+    }
+    refreshForm();
+  }
+  document.getElementById('checkLogin').onclick = checkLogin;
+  form.onsubmit = async event => {
+    event.preventDefault();
+    if (!authenticated || post.disabled) return;
+    if (message.value.trim() && !/^[0-9]{17,20}$/.test(message.value.trim())) {status.textContent = 'Enter a numeric Discord message ID.';return;}
+    post.disabled = true;status.textContent = 'Sending your panel to Discord…';
+    document.getElementById('messageLink').hidden = true;
+    try {
+      const response = await fetch('/api/join-panel', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({mode:mode.value,channel_id:channel.value.trim(),webhook_url:mode.value === 'webhook' ? webhook.value.trim() : '',message_id:message.value.trim()}) });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Posting failed. Check Discord before retrying.');
+      message.value = data.message_id;
+      status.textContent = (data.updated ? 'Panel updated!' : 'Panel posted!') + ' Open the message below and pin it in Discord.\nMessage ID: ' + data.message_id + (data.saved ? '' : '\nCopy this ID; it could not be saved to your store.');
+      const link = document.getElementById('messageLink');link.href = data.message_url;link.hidden = false;
+    } catch (error) {status.textContent = error.message;}
+    finally {refreshForm();}
+  };
+  async function renderPreview() {
+    const container = document.getElementById('preview');
+    try {
+      const response = await fetch('/join/servers.json', {cache:'no-store'});
+      if (!response.ok) throw new Error('Server list could not be loaded.');
+      const config = await response.json();
+      container.replaceChildren();
+      const intro = document.createElement('h2');intro.textContent = '🎮 ABSZ GAMING COMMUNITY';container.append(intro);
+      for (const server of config.servers) {
+        const section = document.createElement('div');section.className = 'server';
+        const heading = document.createElement('h3');heading.textContent = (server.icon || '🎮') + ' ' + server.name;
+        const subtitle = document.createElement('p');subtitle.textContent = server.subtitle;
+        const links = document.createElement('div');links.className = 'linkrow';
+        for (const edition of ['java','bedrock']) if (server[edition]) {
+          const link = document.createElement('a');link.textContent = edition === 'java' ? 'Join Java / Copy IP' : 'Join Bedrock';
+          link.href = '/join/?' + new URLSearchParams({server:server.id,edition});link.target = '_blank';link.rel = 'noopener noreferrer';links.append(link);
+        }
+        section.append(heading,subtitle,links);container.append(section);
+      }
+      const all = document.createElement('a');all.textContent = 'View All Servers';all.href = '/join/';container.append(all);
+    } catch (error) {container.textContent = error.message;}
+  }
+  renderPreview();checkLogin();
+</script>
+</body></html>

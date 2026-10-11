@@ -1,0 +1,32 @@
+{
+  "communityName": "Absz Gaming Community",
+  "discordUrl": "https://discord.gg/VkgBg8xWEU",
+  "servers": [
+    {
+      "id": "bedrock-smp",
+      "name": "AbszSMP Bedrock",
+      "subtitle": "Survival • Bedrock Edition",
+      "description": "Join the AbszSMP Bedrock world with your friends.",
+      "icon": "⛏️",
+      "featured": true,
+      "bedrock": { "host": "AbszSMPbedrock.my.id", "port": 12345 }
+    },
+    {
+      "id": "economy-s6",
+      "name": "AbszoluteCraft Season 6",
+      "subtitle": "Economy • Java & Bedrock",
+      "description": "Explore, trade and build your way up in Season 6.",
+      "icon": "💎",
+      "java": { "host": "AbszSMP.my.id" },
+      "bedrock": { "host": "AbszSMP.my.id", "port": 19213 }
+    },
+    {
+      "id": "rpg",
+      "name": "AbszoluteCraft RPG",
+      "subtitle": "RPG • Java Edition",
+      "description": "Your next adventure begins here.",
+      "icon": "🛡️",
+      "java": { "host": "basic-4.mineidhost.com", "port": 19169 }
+    }
+  ]
+}

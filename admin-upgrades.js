@@ -71,7 +71,7 @@ home=function(){
         <div class="eyebrow">${esc(state.store.season_title)} • ${esc(state.store.season)}</div>
         <h1>Forge your <span>legend.</span></h1>
         <p>Premium ranks, legendary weapons, crates and seasonal relics for AbszSMP. Pricing is server-computed, Touch 'n Go claims are manually verified, and delivery is protected by the AbszStoreBridge.</p>
-        <div class="actions"><a class="btn primary" href="/store" data-nav>Enter Store</a><a class="btn ghost" href="/track" data-nav>Track Order</a></div>
+        <div class="actions"><a class="btn primary" href="/store" data-nav>Enter Store</a><a class="btn ghost" href="/join/">Join Servers</a><a class="btn ghost" href="/track" data-nav>Track Order</a></div>
       </div>
       <div class="hero-media">${homepageVideoMarkup()}</div>
     </section>
@@ -244,3 +244,4 @@ forgot=async function(){
 };
 
 if(location.pathname==='/'||location.pathname.startsWith('/admin/'))render();
+
