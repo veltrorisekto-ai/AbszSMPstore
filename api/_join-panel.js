@@ -2,7 +2,7 @@ import config from '../join/servers.json' with { type: 'json' };
 
 export const JOIN_SITE = 'https://abszsmp.online/join/';
 
-export function makePanel() {
+export function makePanel({ interactive = false } = {}) {
   const children = [
     { type: 10, content: '# 🎮 ABSZ GAMING COMMUNITY\n## JOIN OUR MINECRAFT SERVERS\nPilih server yang kamu mahu main! Java dan Bedrock tersedia.' }
   ];
@@ -15,14 +15,18 @@ export function makePanel() {
       if (!endpoint) continue;
       const query = new URLSearchParams({ server: server.id, edition, autojoin: '1' });
       const label = (edition === 'bedrock' ? 'Join Bedrock' : 'Join Java / Copy IP') + ' (Click Here)';
-      buttons.push({ type: 2, style: 5, label, emoji: { name: edition === 'bedrock' ? '⛏️' : '🟢' }, url: JOIN_SITE + '?' + query });
+      buttons.push(interactive
+        ? { type: 2, style: 3, label, emoji: { name: edition === 'bedrock' ? '⛏️' : '🟢' }, custom_id: `abszjoin:${server.id}:${edition}` }
+        : { type: 2, style: 5, label, emoji: { name: edition === 'bedrock' ? '⛏️' : '🟢' }, url: JOIN_SITE + '?' + query });
       addresses.push(`${edition === 'java' ? 'Java' : 'Bedrock'}: \`${endpoint.host}${endpoint.port ? ':' + endpoint.port : ''}\``);
     }
     children.push({ type: 10, content: `### ${server.icon || '🎮'} ${server.name}\n${server.subtitle}\n${addresses.join('\n')}` });
     children.push({ type: 1, components: buttons });
   }
   children.push({ type: 14, divider: true, spacing: 1 });
-  children.push({ type: 1, components: [{ type: 2, style: 5, label: 'View All Servers (Click Here)', emoji: { name: '🌍' }, url: JOIN_SITE }] });
+  children.push({ type: 1, components: [interactive
+    ? { type: 2, style: 3, label: 'View All Servers (Click Here)', emoji: { name: '🌍' }, custom_id: 'abszjoin:all' }
+    : { type: 2, style: 5, label: 'View All Servers (Click Here)', emoji: { name: '🌍' }, url: JOIN_SITE }] });
   return { flags: 32768, allowed_mentions: { parse: [] }, components: [{ type: 17, accent_color: 0x2ecc71, components: children }] };
 }
 
@@ -39,7 +43,7 @@ export function webhookEndpoint(value, messageId = '') {
 
 export function joinReply(customId) {
   if (customId === 'abszjoin:all') return { type: 4, data: {
-    flags: 64, allowed_mentions: { parse: [] }, content: '🌍 Choose your Minecraft server below.',
+    flags: 64, allowed_mentions: { parse: [] },
     components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Open Server Selector (Click Here)', url: JOIN_SITE }] }]
   } };
   const match = String(customId).match(/^abszjoin:([a-z0-9-]+):(java|bedrock)$/);
@@ -47,11 +51,9 @@ export function joinReply(customId) {
   const edition = match?.[2];
   const endpoint = server?.[edition];
   if (!endpoint) return { type: 4, data: { flags: 64, allowed_mentions: { parse: [] }, content: 'This server option is unavailable. Open https://abszsmp.online/join/ for the current list.' } };
-  const address = endpoint.host + (endpoint.port ? ':' + endpoint.port : '');
   const query = new URLSearchParams({ server: server.id, edition, autojoin: '1' });
   return { type: 4, data: {
     flags: 64, allowed_mentions: { parse: [] },
-    content: `**${server.name}**\n${server.subtitle}\nServer address: \`${address}\`\n${edition === 'bedrock' ? 'Open your private join page to launch Minecraft or copy the host and port.' : 'Open your private join page to copy the IP into Minecraft → Multiplayer → Direct Connection.'}`,
-    components: [{ type: 1, components: [{ type: 2, style: 5, label: (edition === 'bedrock' ? 'Open Bedrock Join Page' : 'Open Java / Copy IP') + ' (Click Here)', url: JOIN_SITE + '?' + query }] }]
+    components: [{ type: 1, components: [{ type: 2, style: 5, label: (edition === 'bedrock' ? 'Join Bedrock' : 'Join Java / Copy IP') + ' (Click Here)', url: JOIN_SITE + '?' + query }] }]
   } };
 }

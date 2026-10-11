@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     if (!['GET', 'POST'].includes(req.method)) return send(res, 405, { ok: false, error: 'Method not allowed' });
     await requireAdmin(req);
     if (req.method === 'GET') {
-      return send(res, 200, { ok: true, bot_configured: Boolean(process.env.DISCORD_BOT_TOKEN), site: JOIN_SITE, panel: makePanel(), last: await getSetting('join_panel') });
+      return send(res, 200, { ok: true, bot_configured: Boolean(process.env.DISCORD_BOT_TOKEN), site: JOIN_SITE, panel: makePanel({ interactive: true }), last: await getSetting('join_panel') });
     }
     if (req.headers.origin !== `https://${req.headers.host}` || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')) {
       return send(res, 403, { ok: false, error: 'Open the Discord panel setup on this website to post.' });
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     } else return send(res, 400, { ok: false, error: 'Choose Store Bot or Channel Webhook.' });
     let response;
     try {
-      response = await fetch(url, { method: messageId ? 'PATCH' : 'POST', headers, body: JSON.stringify(makePanel()), redirect: 'error', signal: AbortSignal.timeout(15000) });
+      response = await fetch(url, { method: messageId ? 'PATCH' : 'POST', headers, body: JSON.stringify(makePanel({ interactive: mode === 'bot' })), redirect: 'error', signal: AbortSignal.timeout(15000) });
     } catch {
       return send(res, 502, { ok: false, error: 'Discord did not confirm the request. Check the channel before retrying to avoid a duplicate panel.' });
     }
