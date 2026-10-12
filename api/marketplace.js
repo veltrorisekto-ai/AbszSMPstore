@@ -256,9 +256,16 @@ export default async function handler(req,res){
     const id=validID(body.listing_id),quantity=Number(body.quantity),method=body.method;
     if(!id||!Number.isSafeInteger(quantity)||quantity<1||quantity>64||!['MIDMAN','DISCORD'].includes(method))throw bad('Invalid purchase request');
     const initial=method==='MIDMAN'?'AWAITING_MIDMAN':'PENDING_SELLER';
-    const rows=await query("WITH held AS (UPDATE market_listings l SET stock=l.stock-$2,updated_at=now() FROM market_players s WHERE l.id=$1 AND s.id=l.seller_id AND s.is_banned=false AND l.status='ACTIVE' AND l.stock >= $2 AND l.seller_id<>$3 RETURNING l.id,l.seller_id,l.unit_price,l.currency), placed AS (INSERT INTO market_orders(listing_id,buyer_id,seller_id,quantity,unit_price,currency,method,status) SELECT held.id,$3,held.seller_id,$2,held.unit_price,held.currency,$4,$5 FROM held RETURNING id,status) SELECT * FROM placed",[id,quantity,user.id,method,initial]);
+    const [limit]=await query("SELECT count(*)::int AS count FROM market_orders WHERE buyer_id=$1 AND status IN ('AWAITING_MIDMAN','PENDING_SELLER','IN_PROGRESS','DELIVERED')",[user.id]);
+    if(limit.count>=10)throw bad('Too many unfinished orders; resolve existing trades before purchasing again',429);
+    const [counterparty]=await query("SELECT seller.minecraft_uuid seller_uuid,buyer.minecraft_uuid buyer_uuid,seller.discord_id seller_discord,buyer.discord_id buyer_discord FROM market_listings l JOIN market_players seller ON seller.id=l.seller_id JOIN market_players buyer ON buyer.id=$2 WHERE l.id=$1",[id,user.id]);
+    if(counterparty&&(counterparty.seller_discord===counterparty.buyer_discord||
+      (counterparty.seller_uuid&&counterparty.seller_uuid===counterparty.buyer_uuid)))throw bad('Trade between the same linked identity is prohibited',409);
+    const rows=await query("WITH held AS (UPDATE market_listings l SET stock=l.stock-$2,updated_at=now() FROM market_players s WHERE l.id=$1 AND s.id=l.seller_id AND s.is_banned=false AND l.status='ACTIVE' AND l.stock >= $2 AND l.seller_id<>$3 RETURNING l.id,l.seller_id,l.unit_price,l.currency), placed AS (INSERT INTO market_orders(listing_id,buyer_id,seller_id,quantity,unit_price,currency,method,status) SELECT held.id,$3,held.seller_id,$2,held.unit_price,held.currency,$4,$5 FROM held RETURNING id,status,seller_id) SELECT * FROM placed",[id,quantity,user.id,method,initial]);
     if(!rows.length)throw bad('Listing unavailable, insufficient stock or you are the seller',409);
     if(method==='MIDMAN')notify('middleman',{order_id:rows[0].id,status:'Awaiting official staff'});
+    const [activity]=await query("SELECT count(*)::int AS count FROM market_orders WHERE buyer_id=$1 AND seller_id=$2 AND created_at>now()-interval '24 hours'",[user.id,counterparty?.seller_id||rows[0].seller_id]);
+    if(activity.count>=5)notify('security',{order_id:rows[0].id,reason:'Repeated buyer/seller orders within 24 hours; manual anti-collusion review required'});
     return send(res,201,{ok:true,order:rows[0],message:method==='MIDMAN'?'Wait for official staff to approve supervision before exchanging payment or items.':'Contact the seller through their Discord profile and wait for them to accept.'});
   }
   const id=validID(body.id);if(!id)throw bad('Invalid order ID');
