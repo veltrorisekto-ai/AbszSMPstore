@@ -15,7 +15,18 @@ tradeLine=function(o){
  const badge=o.status==='COMPLETED'?(o.verification_status==='VERIFIED'
    ?'<div class="notice">✅ Independently verified by '+esc(o.verification_source||'staff')+'. '+(o.reputation_eligible?'This trade counts toward seller trust.':'Excluded from seller rankings due to reputation rules.')+'</div>'
    :'<div class="notice">⚠️ Unverified Completed — buyer confirmed receipt, but this has not been independently verified. +0 reputation; reviews locked.</div>'):'';
- return basic.replace('<div class="actions-flex">',badge+'<div class="actions-flex">');
+ const isBuyer=me&&String(o.buyer_id)===String(me.id),isSeller=me&&String(o.seller_id)===String(me.id);
+ let qr='';
+ if(o.currency==='MYR'&&o.status==='IN_PROGRESS'&&o.qr_snapshot_url){
+  qr='<div class="notice"><b>Pay seller directly: '+money(o.unit_price*o.quantity,'MYR')+'</b>'
+    +'<p>Locked payment recipient: <strong>'+esc(o.qr_recipient_snapshot)+'</strong>. Verify this name in the bank app before paying.</p>'
+    +'<img src="'+esc(o.qr_snapshot_url)+'" loading="lazy" alt="Seller QR" style="display:block;width:100%;max-width:260px;border-radius:12px;margin:12px 0">'
+    +'<p>Transfer bank history is required. A screenshot is not proof and staff do not custody funds.</p></div>';
+  if(isBuyer&&o.payment_status==='WAITING')qr+='<button class="btn gold small" data-order-action="payment_claim" data-id="'+esc(o.id)+'">I Have Paid (Not Verified)</button>';
+  if(isSeller&&o.payment_status==='CLAIMED')qr+='<button class="btn green small" data-order-action="payment_confirm" data-id="'+esc(o.id)+'">I Checked Bank: Payment Received</button>';
+  if(o.payment_status==='SELLER_CONFIRMED')qr+='<div class="notice">Seller manually confirmed receipt. This is not independently verified payment.</div>';
+ }
+ return basic.replace('<div class="actions-flex">',badge+qr+'<div class="actions-flex">');
 };
 const originalSellerProfile=sellerProfile;
 sellerProfile=async function(id){
@@ -49,14 +60,21 @@ const originalMyTrades=myTrades;
 myTrades=async function(){
  await originalMyTrades();
  if(!me||!body.querySelector('#addFromMine'))return;
- const html='<div class="notice">Account linking: Discord '+(me.discord_linked?'✅ Linked':'⚠ Not linked')
- +' · Minecraft UUID '+(me.minecraft_linked?'✅ Linked':'⚠ Not linked')
- +'. Linked identities are required for trusted seller credit, but they are not proof of a trade.</div>'
- +'<div class="actions-flex"><button class="btn outline small" id="marketDiscordLink">Link Discord</button><button class="btn outline small" id="marketMinecraftLink">Link Minecraft (plugin required)</button></div>';
+ const html='<div class="notice"><b>Three verifications required before trading</b><p>Discord '+(me.discord_linked?'✅':'❌')+' · WhatsApp '+(me.whatsapp_linked?'✅ '+esc(me.whatsapp_masked||''):'❌')+' · Bedrock '+(me.bedrock_linked?'✅':'—')+' · Java '+(me.java_linked?'✅':'—')+'</p>'
+  +'<p>Trading: '+(me.ready?'✅ Verified':'🔒 Locked; Discord + WhatsApp + Bedrock OR Java required')+'. Bound accounts cannot be replaced. You may add Java to Bedrock.</p></div>'
+  +'<div class="actions-flex">'
+  +(!me.discord_linked?'<button class="btn outline small" id="marketDiscordLink">Verify Discord</button>':'')
+  +(!me.whatsapp_linked?'<button class="btn outline small" id="marketWhatsappLink">Verify WhatsApp OTP</button>':'')
+  +(!me.bedrock_linked?'<button class="btn outline small" id="marketBedrockLink">Link Bedrock (XUID)</button>':'')
+  +(!me.java_linked?'<button class="btn outline small" id="marketJavaLink">Add Java (UUID)</button>':'')
+  +'<button class="btn outline small" id="marketQRSetup">Seller QR Setup</button></div>';
  const anchor=body.querySelector('#addFromMine')?.closest('.actions-flex');
- if(anchor){anchor.insertAdjacentHTML('beforebegin',html)}
- $('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
- $('marketMinecraftLink').onclick=()=>marketLinkCode('MINECRAFT');
+ if(anchor)anchor.insertAdjacentHTML('beforebegin',html);
+ if($('marketDiscordLink'))$('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
+ if($('marketWhatsappLink'))$('marketWhatsappLink').onclick=verifyWhatsapp;
+ if($('marketBedrockLink'))$('marketBedrockLink').onclick=()=>marketLinkCode('MINECRAFT_BEDROCK');
+ if($('marketJavaLink'))$('marketJavaLink').onclick=()=>marketLinkCode('MINECRAFT_JAVA');
+ if($('marketQRSetup'))$('marketQRSetup').onclick=sellerQRSetup;
  try{
    const data=await call('me');
    for(const listing of data.listings){
@@ -66,6 +84,28 @@ myTrades=async function(){
  }catch{}
 
 };
+async function verifyWhatsapp(){
+ open('Verify WhatsApp','<div class="notice">Use your own WhatsApp number. A real OTP and third-party verification provider are required; the phone cannot be changed after verification.</div>'
+ +'<form id="whatsappForm"><div class="field"><label>WhatsApp Number (+country code)</label><input type="tel" name="phone" placeholder="+60123456789" required></div><button class="btn green">Send OTP</button></form>');
+ $('whatsappForm').onsubmit=async e=>{
+  e.preventDefault();
+  try{
+   await call('whatsapp_start',{phone:new FormData(e.currentTarget).get('phone')});
+   open('WhatsApp OTP','<p>Enter your WhatsApp code. Never share it with anyone.</p><form id="whatsappCheck"><div class="field"><label>OTP Code</label><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,10}" required></div><button class="btn green">Verify WhatsApp</button></form>');
+   $('whatsappCheck').onsubmit=async ev=>{ev.preventDefault();try{await call('whatsapp_check',{code:new FormData(ev.currentTarget).get('code')});await getSession();toast('WhatsApp verified and locked');myTrades()}catch(err){toast(err.message)}};
+  }catch(err){toast(err.message)}
+ };
+}
+async function sellerQRSetup(){
+ let data;try{data=await call('me')}catch(e){toast(e.message);return}
+ const qr=data.seller_qr;
+ if(qr){open('Your Seller QR','<div class="notice">Status: '+esc(qr.status)+' · Locked recipient: '+esc(qr.recipient_name)+'. QR changes require owner review.</div><img src="'+esc(qr.qr_image_url)+'" alt="Your Seller QR" style="max-width:260px;width:100%">');return}
+ open('Register Seller QR (Owner Review)','<p>QR must receive direct payment in the seller’s own bank/e-wallet account. No middleman holds funds in this flow.</p>'
+  +'<form id="qrForm"><div class="field"><label>Actual Bank / Wallet Recipient Name</label><input name="recipient_name" maxlength="120" minlength="4" required></div>'
+  +'<div class="field"><label>Public HTTPS QR image URL</label><input name="qr_image_url" type="url" placeholder="https://..." required></div>'
+  +'<button class="btn green">Submit for Approval</button></form>');
+ $('qrForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);try{await call('seller_qr_submit',{recipient_name:f.get('recipient_name'),qr_image_url:f.get('qr_image_url')});toast('QR submitted for owner approval');myTrades()}catch(err){toast(err.message)}};
+}
 async function sellerEditListing(id){
  if(!mustLogin())return;
  let r;try{r=await call('me')}catch(e){toast(e.message);return}
@@ -162,6 +202,12 @@ ownerModeration=async function(){
    for(const b of box.querySelectorAll('button[data-admin]'))b.remove();
    box.insertAdjacentHTML('beforeend','<div class="actions-flex"><button class="btn green small" data-market-proof="'+order.id+'">Verify Evidence</button></div>');
   }
+ }
+ if(data.qr_submissions?.length){
+  body.insertAdjacentHTML('beforeend','<hr class="divider"><h3>Pending Seller QR Approvals</h3>'
+   +data.qr_submissions.map(q=>'<div class="my-listing"><b>'+esc(q.seller_name)+'</b> · Recipient: '+esc(q.recipient_name)+'<p><img src="'+esc(q.qr_image_url)+'" alt="Seller QR for staff review" style="width:100%;max-width:220px"></p>'
+    +'<button class="btn green small" data-admin="admin_qr_approve" data-id="'+q.seller_id+'">Approve Seller QR</button> '
+    +'<button class="btn danger small" data-admin="admin_qr_reject" data-id="'+q.seller_id+'">Reject</button></div>').join(''));
  }
  if(data.verified?.length){
   const section='<hr class="divider"><h3>Auditable Verified Credits</h3>'
