@@ -86,6 +86,16 @@ async function existingBotChannels(){
   }catch(e){toast(e.message)}
  };
 }
+async function staffTicket(orderId,action){
+ if(action==='ticket_close'&&!confirm('Archive this middleman ticket for staff-only access?'))return;
+ try{
+  const response=await fetch('/api/marketplace-setup',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({op:action,order_id:orderId})});
+  const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Ticket request failed');
+  const ticket=data.ticket;
+  if(ticket.url)open('Private Middleman Ticket','<div class="notice">This ticket is visible only to approved Discord staff and identity-linked participants. Never request passwords or private account keys.</div><a class="btn green" rel="noopener noreferrer" target="_blank" href="'+esc(ticket.url)+'">Open Ticket on Discord</a>');
+  else{toast('Ticket archived. Staff can still review messages.');ownerModeration()}
+ }catch(e){toast(e.message)}
+}
 async function ownerVerifyOrder(orderId){
  open('Verify Independently Completed Trade',
  '<p class="muted">Only use real middleman evidence you checked yourself. A buyer/seller screenshot or website button is not evidence. Direct Discord trades require trusted Minecraft server proof.</p>'
@@ -121,6 +131,9 @@ ownerModeration=async function(){
   const match=box.textContent.match(/Order #(\d+)/);
   const order=data.orders.find(x=>String(x.id)===match?.[1]);
   if(!order)continue;
+  if(order.method==='MIDMAN'){
+   box.insertAdjacentHTML('beforeend','<div class="actions-flex"><button class="btn outline small" data-market-ticket="'+order.id+'">Open/Find Private Ticket</button><button class="btn outline small" data-market-archive="'+order.id+'">Archive Ticket</button></div>');
+  }
   if(order.status==='COMPLETED'){
    for(const b of box.querySelectorAll('button[data-admin]'))b.remove();
    box.insertAdjacentHTML('beforeend','<div class="actions-flex"><button class="btn green small" data-market-proof="'+order.id+'">Verify Evidence</button></div>');
@@ -133,10 +146,12 @@ ownerModeration=async function(){
  }
 };
 document.addEventListener('click',event=>{
- const el=event.target.closest('[data-market-proof],[data-market-revoke]');
+ const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive]');
  if(!el)return;
  if(el.dataset.marketProof)return ownerVerifyOrder(el.dataset.marketProof);
  if(el.dataset.marketRevoke)return ownerRevokeOrder(el.dataset.marketRevoke);
+ if(el.dataset.marketTicket)return staffTicket(el.dataset.marketTicket,'ticket_open');
+ if(el.dataset.marketArchive)return staffTicket(el.dataset.marketArchive,'ticket_close');
 });
 (async()=>{
  const p=new URLSearchParams(location.search);
