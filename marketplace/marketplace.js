@@ -68,13 +68,13 @@ async function refreshListings(){
 }
 function accountModal(register=false){
  open(register?'Create Player Account':'Player Sign In',
- '<p class="muted">Your marketplace player account is separate from the official store owner login. Your in-game identity and Discord ID are self-declared until reviewed by staff.</p>'
+ '<p class="muted">Your marketplace player account is separate from the official store owner login. Discord, WhatsApp OTP, and one verified Minecraft account (Bedrock or Java) are mandatory for trade. Your linked Discord and Minecraft accounts cannot be changed by players.</p>'
  +'<form id="accountForm">'
  +'<div class="field"><label>MINECRAFT USERNAME</label><input name="username" autocomplete="username" minlength="3" maxlength="32" required placeholder="Your exact Java/Bedrock name"></div>'
  +(register?'<div class="form-grid"><div class="field"><label>DISCORD USER ID (17–20 DIGITS)</label><input name="discord_id" inputmode="numeric" pattern="[0-9]{17,20}" required placeholder="Copy User ID"></div><div class="field"><label>DISCORD DISPLAY NAME</label><input name="discord_name" maxlength="64" minlength="2" required placeholder="Your Discord name"></div></div><p class="form-footnote">Find your ID: enable Discord Developer Mode, right-click your profile and choose <strong>Copy User ID</strong>. This ID is not proof of ownership.</p>':'')
  +'<div class="field"><label>PASSWORD</label><input name="password" autocomplete="'+(register?'new-password':'current-password')+'" type="password" required minlength="12" maxlength="128"></div>'
  +'<div class="form-row"><button type="submit" class="btn gold">'+(register?'Create Account':'Sign In')+'</button><button type="button" class="btn outline" id="changeAccountMode">'+(register?'Already registered? Sign in':'New player? Register')+'</button></div></form>'
- +'<div class="notice">No automatic Discord/Minecraft identity verification is performed. Never share passwords or verification codes.</div>');
+ +'<div class="notice">Discord, WhatsApp and Minecraft verification is required before trading. Do not share linking codes or OTPs.</div>');
  $('changeAccountMode').onclick=()=>accountModal(!register);
  $('accountForm').onsubmit=async event=>{
   event.preventDefault();
@@ -104,10 +104,10 @@ function newListing(){
  +'<div class="field"><label>EXACT ITEM DESCRIPTION & DELIVERY TERMS</label><textarea name="description" required minlength="15" maxlength="1600" placeholder="Enchantments, item stats, server, trade location, price details and restrictions"></textarea></div>'
  +'<div class="form-grid"><div class="field"><label>SERVER</label><select name="server" required>'+options(servers.length?servers:['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'],'Choose a server')+'</select></div>'
  +'<div class="field"><label>CATEGORY</label><select name="category" required>'+options(categories.length?categories:['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'],'Choose a category')+'</select></div></div>'
- +'<div class="form-grid"><div class="field"><label>PRICE CURRENCY</label><select name="currency" id="currency" required><option value="COINS">In-game coins (no real-money conversion)</option></select></div><div class="field"><label id="priceLabel">PRICE PER ITEM (COINS)</label><input type="number" name="price" min="1" max="100000000" step="1" required></div></div>'
+ +'<div class="form-grid"><div class="field"><label>PRICE CURRENCY</label><select name="currency" id="currency" required><option value="MYR">RM (buyer pays approved seller QR)</option><option value="COINS">In-game coins (no cash-out)</option></select></div><div class="field"><label id="priceLabel">PRICE PER ITEM (RM)</label><input type="number" name="price" min="0.01" max="1000000" step="0.01" required></div></div>'
  +'<div class="form-grid"><div class="field"><label>QUANTITY AVAILABLE</label><input type="number" name="stock" min="1" max="100000" step="1" required value="1"></div>'
  +'<div class="field"><label>HTTPS IMAGE URL (OPTIONAL)</label><input type="url" name="image_url" maxlength="500" placeholder="https://…"></div></div>'
- +'<div class="notice">In-game coins may not be cashed out, exchanged for real money, or transferred between servers. Avoid account sales, duplication exploits, prohibited goods, and false item claims.</div>'
+ +'<div class="notice">RM listings require an approved seller QR. Seller receives money directly; the marketplace does not hold funds. Both accounts need verified Discord, WhatsApp and Minecraft. In-game coins cannot be cashed out. Sales must comply with Minecraft usage rules and local laws.</div>'
  +'<div class="form-row"><button class="btn green" type="submit">Publish Listing</button></div></form>');
  $('currency').onchange=()=>{
   const rm=$('currency').value==='MYR';$('priceLabel').textContent=rm?'PRICE PER ITEM (RM)':'PRICE PER ITEM (COINS)';
@@ -126,8 +126,8 @@ function newListing(){
 function selectMethod(method){
  chosenMethod=method;document.querySelectorAll('.choice').forEach(e=>e.classList.toggle('selected',e.dataset.method===chosenMethod));
  $('tradeInstruction').innerHTML=chosenMethod==='MIDMAN'
-  ?'<strong>Staff-supervised trade:</strong> Your order waits for an owner-approved midman before progressing. Verify that the moderator is real in the official Discord. This site does not collect, hold, or verify money/items.'
-  :'<strong>Direct Discord trade:</strong> You contact the seller yourself and the seller must accept the order. Direct trades are not insured or monitored; confirm identity and details before exchanging anything.';
+  ?'<strong>Staff-supervised trade:</strong> An approved middleman coordinates the order. RM QR still pays directly to the seller. Staff are NOT holding money. Do not pay before staff opens the trade.'
+  :'<strong>Direct QR trade:</strong> Seller must accept the order, then the locked approved seller QR is shown in My Orders. Verify account recipient, pay the exact amount and retain bank evidence. Seller checks incoming money personally.';
 }
 function buy(id){
  if(!mustLogin())return;
@@ -140,7 +140,7 @@ function buy(id){
  +'<div class="field"><label>QUANTITY</label><input type="number" id="tradeQty" min="1" max="'+Math.min(64,item.stock)+'" step="1" value="1"></div>'
  +'<p><strong>Choose how to trade</strong></p>'
  +'<div class="two-choice"><button type="button" class="choice selected" data-method="MIDMAN"><strong>🛡 Request Midman</strong><small>Staff-supervised order. Wait for official owner approval before exchanging anything.</small></button>'
- +'<button type="button" class="choice" data-method="DISCORD"><strong>💬 Chat Seller on Discord</strong><small>Arrange the trade directly on Discord at your own risk.</small></button></div>'
+ +'<button type="button" class="choice" data-method="DISCORD"><strong>💬 Chat Seller on Discord</strong><small>Pay the approved seller QR directly once the order is in progress. Screenshot is not payment proof.</small></button></div>'
  +'<div class="notice" id="tradeInstruction"></div>'
  +'<div class="form-row"><button type="button" class="btn gold" id="confirmBuy">Create Order</button><button type="button" class="btn outline" id="sellerProfileBuy">Check Seller Profile</button></div>');
  selectMethod('MIDMAN');
