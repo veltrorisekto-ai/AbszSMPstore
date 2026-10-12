@@ -124,12 +124,13 @@ export default async function handler(req,res){
     }
     if(op==='admin'){
       await requireAdmin(req);
-      const [orders,sellers,listings]=await Promise.all([
+      const [orders,sellers,listings,verified]=await Promise.all([
         query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,o.verification_status,o.risk_note,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') OR (o.status='COMPLETED' AND o.verification_status<>'VERIFIED') ORDER BY o.created_at DESC LIMIT 100"),
         query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
-        query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100")
+        query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100"),
+        query("SELECT o.id,o.verification_source,o.verification_reference,o.reputation_eligible,l.title,b.username buyer_name,s.username seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.verification_status='VERIFIED' ORDER BY o.verified_at DESC LIMIT 30")
       ]);
-      return send(res,200,{ok:true,orders,sellers,listings});
+      return send(res,200,{ok:true,orders,sellers,listings,verified});
     }
     throw bad('Unknown operation');
   }
