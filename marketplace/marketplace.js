@@ -92,6 +92,7 @@ $('accountButton').onclick=()=>me?myTrades():accountModal();
 $('browseButton').onclick=()=>$('browse').scrollIntoView({behavior:'smooth'});
 $('sellButton').onclick=()=>newListing();
 $('myTradesButton').onclick=()=>myTrades();
+$('moderateLink').onclick=()=>ownerModeration();
 const delay=fn=>{clearTimeout(delay.timer);delay.timer=setTimeout(fn,260)};
 $('search').addEventListener('input',()=>delay(refreshListings));
 for(const id of ['serverFilter','categoryFilter','sortFilter'])$(id).addEventListener('change',refreshListings);
