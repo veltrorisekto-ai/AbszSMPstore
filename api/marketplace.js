@@ -1,6 +1,9 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { sql, send, fail, readBody, qs, requireAdmin } from './_lib.js';
+import { sql, send, fail, readBody, qs, requireAdmin, audit } from './_lib.js';
+import { waitUntil } from '@vercel/functions';
+import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
+import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
 // Player marketplace is deliberately isolated from the official store order/bridge tables.
 const query=(statement,values=[])=>sql.query(statement,values);
@@ -12,6 +15,13 @@ const VALID_SERVERS=['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'];
 const VALID_CATEGORIES=['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'];
 const VALID_CURRENCIES=['COINS'];
 const validID=(value)=>/^[1-9]\d{0,17}$/.test(String(value||''))?String(value):null;
+function notify(kind,payload={},dashboard=true){
+  try{
+    const tasks=[sendMarketEvent(kind,payload)];
+    if(dashboard)tasks.push(syncDashboard(query));
+    waitUntil(Promise.allSettled(tasks).then(all=>all.forEach(r=>{if(r.status==='rejected')console.error('Market Discord sync failed',String(r.reason?.message||r.reason).slice(0,160))})));
+  }catch(e){console.error('Market Discord scheduling unavailable',String(e.message).slice(0,120))}
+}
 let schemaPromise;
 async function schema(){
   if(!process.env.DATABASE_URL)throw bad('Marketplace database is not configured',503);
@@ -25,6 +35,8 @@ async function schema(){
     await query("CREATE INDEX IF NOT EXISTS market_orders_seller ON market_orders(seller_id,created_at DESC)");
     await query("CREATE TABLE IF NOT EXISTS market_reviews (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, order_id BIGINT NOT NULL UNIQUE REFERENCES market_orders(id), seller_id BIGINT NOT NULL REFERENCES market_players(id), buyer_id BIGINT NOT NULL REFERENCES market_players(id), stars INT NOT NULL CHECK(stars BETWEEN 1 AND 5), comment VARCHAR(700) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())");
     await query("CREATE INDEX IF NOT EXISTS market_reviews_seller ON market_reviews(seller_id,created_at DESC)");
+    await ensureTrustSchema();
+    await query("CREATE UNIQUE INDEX IF NOT EXISTS market_verified_discord_identity ON market_players(discord_id) WHERE is_verified=true");
   })().catch(e=>{schemaPromise=null;throw e;});
   return schemaPromise;
 }
@@ -73,7 +85,7 @@ export default async function handler(req,res){
     const p=qs(req),op=getPath(req);
     if(op==='list'){
       const search=clean(p.get('q'),80),server=clean(p.get('server'),40),category=clean(p.get('category'),40),sort=clean(p.get('sort'),20);
-      const rows=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified, COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) AS completed FROM market_orders o WHERE o.seller_id=s.id AND o.status='COMPLETED') t ON true LEFT JOIN LATERAL (SELECT count(*) AS review_count,round(avg(stars),2) AS stars FROM market_reviews v WHERE v.seller_id=s.id) r ON true WHERE l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false AND ($1='' OR l.title ILIKE '%'||$1||'%' OR l.description ILIKE '%'||$1||'%') AND ($2='' OR l.server=$2) AND ($3='' OR l.category=$3) ORDER BY l.created_at DESC LIMIT 120",[search,server,category]);
+      const rows=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified, COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) AS completed FROM market_orders o WHERE o.seller_id=s.id AND o.status='COMPLETED' AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) AS review_count,round(avg(stars),2) AS stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false AND ($1='' OR l.title ILIKE '%'||$1||'%' OR l.description ILIKE '%'||$1||'%') AND ($2='' OR l.server=$2) AND ($3='' OR l.category=$3) ORDER BY l.created_at DESC LIMIT 120",[search,server,category]);
       if(sort==='price-low')rows.sort((a,b)=>a.unit_price-b.unit_price);
       if(sort==='price-high')rows.sort((a,b)=>b.unit_price-a.unit_price);
       if(sort==='trusted')rows.sort((a,b)=>Number(b.completed)-Number(a.completed));
@@ -81,21 +93,29 @@ export default async function handler(req,res){
     }
     if(op==='seller'){
       const id=validID(p.get('id'));if(!id)throw bad('Invalid seller ID');
-      const [seller]=await query("SELECT p.id,p.username,p.discord_id,p.discord_name,p.is_verified,p.created_at,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.rating,0)::numeric(3,2) AS rating FROM market_players p LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=p.id AND status='COMPLETED') t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(stars),2) rating FROM market_reviews WHERE seller_id=p.id) r ON true WHERE p.id=$1 AND p.is_banned=false",[id]);
+      const [seller]=await query("SELECT p.id,p.username,p.discord_id,p.discord_name,p.is_verified,p.created_at,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.rating,0)::numeric(3,2) AS rating FROM market_players p LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=p.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(stars),2) rating FROM market_reviews r JOIN market_orders o ON o.id=r.order_id WHERE r.seller_id=p.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE p.id=$1 AND p.is_banned=false",[id]);
       if(!seller)throw bad('Seller not found',404);
-      const [reviews,listings]=await Promise.all([
-        query("SELECT r.stars,r.comment,r.created_at,b.username AS buyer_name FROM market_reviews r JOIN market_players b ON b.id=r.buyer_id WHERE r.seller_id=$1 ORDER BY r.created_at DESC LIMIT 50",[id]),
-        query("SELECT id,title,unit_price,currency,stock,server,category,image_url FROM market_listings WHERE seller_id=$1 AND status='ACTIVE' AND stock>0 ORDER BY created_at DESC LIMIT 30",[id])
+      const [reviews,listings,metrics]=await Promise.all([
+        query("SELECT r.stars,r.comment,r.created_at,b.username AS buyer_name FROM market_reviews r JOIN market_players b ON b.id=r.buyer_id JOIN market_orders o ON o.id=r.order_id WHERE r.seller_id=$1 AND o.verification_status='VERIFIED' AND o.reputation_eligible=true ORDER BY r.created_at DESC LIMIT 50",[id]),
+        query("SELECT id,title,unit_price,currency,stock,server,category,image_url FROM market_listings WHERE seller_id=$1 AND status='ACTIVE' AND stock>0 ORDER BY created_at DESC LIMIT 30",[id]),
+        query("SELECT count(DISTINCT buyer_id)::int AS unique_verified_buyers,(SELECT count(*)::int FROM market_orders WHERE seller_id=$1 AND status='DISPUTED') AS disputed_trades FROM market_orders WHERE seller_id=$1 AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true",[id])
       ]);
-      return send(res,200,{ok:true,seller,reviews,listings});
+      return send(res,200,{ok:true,seller:{...seller,...metrics[0]},reviews,listings});
     }
     if(op==='me'){
       const user=await account(req);
       const [listings,orders]=await Promise.all([
         query("SELECT id,title,server,category,stock,currency,unit_price,status,created_at FROM market_listings WHERE seller_id=$1 AND status<>'REMOVED' ORDER BY created_at DESC LIMIT 100",[user.id]),
-        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
+        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
       ]);
       return send(res,200,{ok:true,user:brief(user),listings,orders});
+    }
+    if(op==='stats')return send(res,200,{ok:true,stats:await dashboardCounts(query)});
+    if(op==='listing'){
+      const id=validID(p.get('id'));if(!id)throw bad('Invalid listing');
+      const [listing]=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=s.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(v.stars),2) stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.id=$1 AND l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false",[id]);
+      if(!listing)throw bad('Listing no longer available',404);
+      return send(res,200,{ok:true,listing});
     }
     if(op==='session'){
       const user=await account(req,true).catch(()=>null);
@@ -104,7 +124,7 @@ export default async function handler(req,res){
     if(op==='admin'){
       await requireAdmin(req);
       const [orders,sellers,listings]=await Promise.all([
-        query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') ORDER BY o.created_at DESC LIMIT 100"),
+        query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,o.verification_status,o.risk_note,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') OR (o.status='COMPLETED' AND o.verification_status<>'VERIFIED') ORDER BY o.created_at DESC LIMIT 100"),
         query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
         query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100")
       ]);
@@ -118,6 +138,8 @@ export default async function handler(req,res){
   if(op==='register'){
     const username=clean(body.username,32),discordId=clean(body.discord_id,24),discordName=clean(body.discord_name,64),password=String(body.password||'');
     if(!USERNAME.test(username)||!DISCORD_ID.test(discordId)||discordName.length<2||password.length<12||password.length>128)throw bad('Enter a 3–32 character Minecraft username, valid Discord user ID, Discord name and password of at least 12 characters');
+    const [discordUsed]=await query("SELECT id FROM market_players WHERE discord_id=$1 LIMIT 1",[discordId]);
+    if(discordUsed)throw bad('Discord ID already claimed by another marketplace account. Contact staff for account recovery.',409);
     const passwordHash=await bcrypt.hash(password,12);
     let created;
     try{[created]=await query("INSERT INTO market_players(username,password_hash,discord_id,discord_name) VALUES($1,$2,$3,$4) RETURNING id,username,discord_id,discord_name,is_verified,session_version,created_at",[username,passwordHash,discordId,discordName]);}
@@ -146,9 +168,25 @@ export default async function handler(req,res){
     const admin=await requireAdmin(req);
     const id=validID(body.id);
     if(!id)throw bad('Invalid ID');
+    if(op==='admin_trade_verify'){
+      const reference=clean(body.evidence_reference,160);
+      const proof=await verifyWithEvidence({orderId:id,source:'STAFF',reference,actor:'OWNER:'+admin.id,override:body.override===true});
+      if(!proof.already_verified)notify('verified',{order_id:id,verification:'STAFF VERIFIED'+(proof.eligible?' · Reputation eligible':' · Excluded from ranking')});
+      return send(res,200,{ok:true,eligible:proof.eligible,already_verified:proof.already_verified,risk:proof.risk||null});
+    }
+    if(op==='admin_trade_revoke'){
+      const reason=clean(body.reason,400);
+      if(reason.length<20)throw bad('Provide at least 20 characters explaining why evidence is revoked');
+      const rows=await query("UPDATE market_orders SET verification_status='REVOKED',reputation_eligible=false,risk_note=$2,updated_at=now() WHERE id=$1 AND verification_status='VERIFIED' RETURNING id",[id,'REVOKED_BY_OWNER:'+reason]);
+      if(!rows.length)throw bad('Trade is not currently verified',409);
+      await audit('ADMIN',String(admin.id),'MARKET_VERIFICATION_REVOKED',{order_id:id,reason});
+      notify('security',{order_id:id,reason:'Previously verified trade revoked: '+reason});
+      return send(res,200,{ok:true});
+    }
     if(op==='admin_midman'){
       const rows=await query("UPDATE market_orders SET status='IN_PROGRESS',midman_approved_by=$2,midman_approved_at=now(),updated_at=now() WHERE id=$1 AND status='AWAITING_MIDMAN' RETURNING id",[id,String(admin.id)]);
       if(!rows.length)throw bad('Trade is not awaiting a midman',409);
+      notify('middleman',{order_id:id,status:'Staff supervision approved'});
       return send(res,200,{ok:true,message:'Staff supervision recorded. This does not mean funds are held or paid.'});
     }
     if(op==='admin_cancel'){
@@ -184,6 +222,7 @@ export default async function handler(req,res){
     const [count]=await query("SELECT count(*)::int AS n FROM market_listings WHERE seller_id=$1 AND status='ACTIVE'",[user.id]);
     if(count.n>=30)throw bad('Maximum 30 active listings per seller',409);
     const [listing]=await query("INSERT INTO market_listings(seller_id,title,description,server,category,currency,unit_price,stock,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",[user.id,title,description,server,category,currency,price,stock,image||null]);
+    notify('marketplace',{listing_id:listing.id,seller_id:user.id,title,server,seller:user.username,price:price.toLocaleString('en-MY')+' coins'});
     return send(res,201,{ok:true,listing});
   }
   if(op==='listing_status'){
@@ -200,6 +239,7 @@ export default async function handler(req,res){
     const initial=method==='MIDMAN'?'AWAITING_MIDMAN':'PENDING_SELLER';
     const rows=await query("WITH held AS (UPDATE market_listings l SET stock=l.stock-$2,updated_at=now() FROM market_players s WHERE l.id=$1 AND s.id=l.seller_id AND s.is_banned=false AND l.status='ACTIVE' AND l.stock >= $2 AND l.seller_id<>$3 RETURNING l.id,l.seller_id,l.unit_price,l.currency), placed AS (INSERT INTO market_orders(listing_id,buyer_id,seller_id,quantity,unit_price,currency,method,status) SELECT held.id,$3,held.seller_id,$2,held.unit_price,held.currency,$4,$5 FROM held RETURNING id,status) SELECT * FROM placed",[id,quantity,user.id,method,initial]);
     if(!rows.length)throw bad('Listing unavailable, insufficient stock or you are the seller',409);
+    if(method==='MIDMAN')notify('middleman',{order_id:rows[0].id,status:'Awaiting official staff'});
     return send(res,201,{ok:true,order:rows[0],message:method==='MIDMAN'?'Wait for official staff to approve supervision before exchanging payment or items.':'Contact the seller through their Discord profile and wait for them to accept.'});
   }
   const id=validID(body.id);if(!id)throw bad('Invalid order ID');
@@ -219,7 +259,7 @@ export default async function handler(req,res){
     if(!buyer||order.status!=='DELIVERED')throw bad('Only the buyer can confirm delivered items',409);
     const rows=await query("UPDATE market_orders SET status='COMPLETED',completed_at=now(),updated_at=now() WHERE id=$1 AND buyer_id=$2 AND status='DELIVERED' RETURNING id",[id,user.id]);
     if(!rows.length)throw bad('Order has already changed',409);
-    return send(res,200,{ok:true,message:'Completed. You can now leave a verified transaction review.'});
+    return send(res,200,{ok:true,message:'Buyer confirmed receipt, but this is UNVERIFIED. Only staff or trusted server evidence can verify a trade and unlock a reputation review.'});
   }
   if(op==='cancel'){
     if(!buyer&&!seller)throw bad('Unauthorized',403);
@@ -228,19 +268,22 @@ export default async function handler(req,res){
     return send(res,200,{ok:true});
   }
   if(op==='dispute'){
-    if(!['IN_PROGRESS','DELIVERED'].includes(order.status))throw bad('Only active trades can be disputed',409);
+    if(!['IN_PROGRESS','DELIVERED','COMPLETED'].includes(order.status))throw bad('Only active or completed trades can be disputed',409);
     const reason=clean(body.reason,700);if(reason.length<15)throw bad('Explain the issue in at least 15 characters');
-    const rows=await query("UPDATE market_orders SET status='DISPUTED',dispute_reason=$2,updated_at=now() WHERE id=$1 AND status IN ('IN_PROGRESS','DELIVERED') RETURNING id",[id,reason]);
+    const rows=await query("UPDATE market_orders SET status='DISPUTED',dispute_reason=$2,updated_at=now() WHERE id=$1 AND status IN ('IN_PROGRESS','DELIVERED','COMPLETED') RETURNING id",[id,reason]);
     if(!rows.length)throw bad('Order status changed',409);
-    return send(res,200,{ok:true,message:'Dispute recorded. Contact staff in the official Discord server with the order ID.'});
+    await query("UPDATE market_orders SET verification_status='REVOKED',reputation_eligible=false WHERE id=$1 AND verification_status='VERIFIED'",[id]);
+    notify('security',{order_id:id,seller:order.seller_name,buyer:order.buyer_name,reason});
+    return send(res,200,{ok:true,message:'Dispute recorded. Verified reputation credit, if any, is suspended. Contact official staff with order ID and evidence.'});
   }
   if(op==='review'){
-    if(!buyer||order.status!=='COMPLETED')throw bad('Only a buyer with a completed order can review',403);
+    if(!buyer||order.status!=='COMPLETED'||order.verification_status!=='VERIFIED'||!order.reputation_eligible)throw bad('Only independently verified reputation-eligible completed trades can receive trusted reviews',403);
     const stars=Number(body.stars),comment=clean(body.comment,700);
     if(!Number.isInteger(stars)||stars<1||stars>5||comment.length<10)throw bad('Enter 1–5 stars and at least 10 characters');
     try{
       await query('INSERT INTO market_reviews(order_id,seller_id,buyer_id,stars,comment) VALUES($1,$2,$3,$4,$5)',[id,order.seller_id,user.id,stars,comment]);
     }catch(e){if(e.code==='23505'||String(e.message).includes('unique'))throw bad('Review already submitted for this order',409);throw e;}
+    notify('reviews',{order_id:id,seller:order.seller_name,buyer:order.buyer_name,verification:'Verified buyer: '+stars+'/5 stars'});
     return send(res,201,{ok:true});
   }
   throw bad('Unknown operation');
