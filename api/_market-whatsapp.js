@@ -22,6 +22,7 @@ async function callTwilio(route,params){
  return data;
 }
 export async function beginWhatsApp(playerId,phone){
+ config(); // Fail before consuming rate limits if real WhatsApp Verify credentials are missing.
  await ensureIdentitySchema();
  const value=String(phone||'').replace(/[\s()-]/g,'');
  if(!phoneValid(value))throw bad('Enter your own WhatsApp number in E.164 format, e.g. +60123456789');
