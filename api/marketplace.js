@@ -229,8 +229,16 @@ export default async function handler(req,res){
     const [count]=await query("SELECT count(*)::int AS n FROM market_listings WHERE seller_id=$1 AND status='ACTIVE'",[user.id]);
     if(count.n>=30)throw bad('Maximum 30 active listings per seller',409);
     const [listing]=await query("INSERT INTO market_listings(seller_id,title,description,server,category,currency,unit_price,stock,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",[user.id,title,description,server,category,currency,price,stock,image||null]);
-    notify('marketplace',{listing_id:listing.id,seller_id:user.id,title,server,seller:user.username,price:price.toLocaleString('en-MY')+' coins'});
+    notify('marketplace',{listing_id:listing.id,seller_id:user.id,title,server,seller:user.username,price:price.toLocaleString('en-MY')+' coins',image});
     return send(res,201,{ok:true,listing});
+  }
+  if(op==='listing_update'){
+    const id=validID(body.id),stock=Number(body.stock),price=Number(body.unit_price);
+    if(!id||!Number.isSafeInteger(stock)||stock<0||stock>100000||!Number.isSafeInteger(price)||price<1||price>100000000)throw bad('Invalid listing quantity or coin price');
+    const rows=await query("UPDATE market_listings SET unit_price=$3,stock=$4,status=CASE WHEN $4=0 THEN 'PAUSED' ELSE status END,updated_at=now() WHERE id=$1 AND seller_id=$2 AND status IN ('ACTIVE','PAUSED') RETURNING id,title,server,unit_price,stock,currency,status",( [id,user.id,price,stock] ));
+    if(!rows.length)throw bad('Listing cannot be updated',409);
+    const old=await query("SELECT unit_price,stock FROM market_listings WHERE id=$1 AND seller_id=$2",[id,user.id]);
+    return send(res,200,{ok:true,listing:rows[0],note:'Snapshot prices on existing orders are unchanged. Re-post deal announcements from confirmed old/new changes only.'});
   }
   if(op==='listing_status'){
     const id=validID(body.id);if(!id)throw bad('Invalid listing');
