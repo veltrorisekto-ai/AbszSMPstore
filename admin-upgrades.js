@@ -65,21 +65,41 @@ function bindHomepageVideo(){
 home=function(){
   const featured=state.products.filter(p=>p.featured).slice(0,3);
   const picks=featured.length?featured:state.products.slice(0,3);
-  app.innerHTML=`<div class="container">
-    <section class="hero hero-video-layout">
-      <div class="hero-copy">
-        <div class="eyebrow">${esc(state.store.season_title)} • ${esc(state.store.season)}</div>
-        <h1>Forge your <span>legend.</span></h1>
-        <p>Premium ranks, legendary weapons, crates and seasonal relics for AbszSMP. Pricing is server-computed, Touch 'n Go claims are manually verified, and delivery is protected by the AbszStoreBridge.</p>
-        <div class="actions"><a class="btn primary" href="/store" data-nav>Enter Store</a><a class="btn ghost" href="/join/">Join Servers</a><a class="btn ghost" href="/track" data-nav>Track Order</a></div>
-      </div>
-      <div class="hero-media">${homepageVideoMarkup()}</div>
+  app.innerHTML=`<section class="kingdom-hero" aria-labelledby="kingdom-title">
+      <div class="kingdom-art" role="img" aria-label="AbszoluteCraft crowned gold emblem above a magical Minecraft kingdom with castles and waterfalls"></div>
+      <div class="container kingdom-inner"><div class="kingdom-copy">
+        <div class="eyebrow"><span class="royal-line"></span> Welcome to AbszoluteCraft</div>
+        <h1 id="kingdom-title">Your world.<br>Your <span>legend.</span></h1>
+        <p>Build a kingdom. Discover an adventure. Find your people. A new chapter awaits in our Minecraft worlds.</p>
+        <div class="actions"><a class="btn primary" href="/store" data-nav>Explore the Store <span aria-hidden="true">→</span></a><a class="btn join-btn" href="/join/">Join Servers <span class="click-hint">(Click Here)</span></a></div>
+        <a class="hero-track" href="/track" data-nav>Already placed an order? Track it here →</a>
+      </div></div>
+      <div class="kingdom-caption"><span>THE ABSZOLUTECRAFT COMMUNITY</span><span>BUILD · EXPLORE · BELONG</span></div>
     </section>
-    <section class="section"><div class="section-head"><div><div class="eyebrow">Explore</div><h2>Eldra Market</h2></div><span class="muted">Choose your path</span></div><div class="category-row">${categoryLink('⚔️','Weapons','weapons')}${categoryLink('👑','Ranks','ranks')}${categoryLink('🗝️','Crates','crates')}${categoryLink('🐉','Bundles','bundles')}${categoryLink('🎁','Limited','limited')}</div></section>
-    <section class="section"><div class="section-head"><div><div class="eyebrow">Featured</div><h2>Season 5 Relics</h2></div><a href="/store" data-nav class="muted">View all →</a></div><div class="grid">${picks.length?picks.map(productCard).join(''):'<div class="panel">Products are being prepared in the owner panel.</div>'}</div></section>
-  </div>`;
+    <div class="container">
+      <section class="world-section section" aria-labelledby="worlds-title"><div class="section-head"><div><div class="eyebrow">Choose your adventure</div><h2 id="worlds-title">One community. Endless possibilities.</h2></div><a href="/join/" class="text-link">All servers <span aria-hidden="true">↗</span></a></div><div class="world-grid" id="homeWorlds"><a href="/join/" class="world-card"><span class="world-number">✦</span><div><h3>Discover our Minecraft worlds</h3><p>Survival, Economy & RPG</p></div><span class="world-arrow" aria-hidden="true">↗</span></a></div></section>
+      <section class="section market-section"><div class="section-head"><div><div class="eyebrow">The royal marketplace</div><h2>Find your next favourite.</h2></div><span class="muted">A little extra for your adventure</span></div><div class="category-row">${categoryLink('⚔️','Weapons','weapons')}${categoryLink('👑','Ranks','ranks')}${categoryLink('🗝️','Crates','crates')}${categoryLink('🐉','Bundles','bundles')}${categoryLink('🪙','Coins','coins')}${categoryLink('🎁','Limited','limited')}</div></section>
+      <section class="section featured-section"><div class="section-head"><div><div class="eyebrow">Handpicked from the store</div><h2>Featured treasures</h2></div><a href="/store" data-nav class="text-link">View the collection →</a></div><div class="grid">${picks.length?picks.map(productCard).join(''):'<div class="panel">Products are being prepared in the owner panel.</div>'}</div></section>
+      <section class="section trailer-section" aria-labelledby="trailer-title"><div class="trailer-copy"><div class="eyebrow">${esc(state.store.season_title)} • ${esc(state.store.season)}</div><h2 id="trailer-title">Every legend<br>has a beginning.</h2><p class="muted">Step into the world of AbszSMP. Watch our season trailer and discover the adventure that started it all.</p><a class="text-link" href="/join/">Find your world →</a></div><div class="hero-media">${homepageVideoMarkup()}</div></section>
+      <section class="community-banner"><div><div class="eyebrow">Better, together</div><h2>Your next adventure starts here.</h2><p>Meet the community, share your builds, and make yourself at home.</p></div><a class="btn ghost" id="homeDiscord" href="/join/">Meet the community ↗</a></section>
+      <div class="store-assurance"><span>Prices in RM</span><span>Touch ’n Go payments</span><span>Manual payment verification</span><a href="/track" data-nav>Order tracking →</a></div>
+    </div>`;
   bindHomepageVideo();
+  loadHomepageWorlds();
 };
+
+async function loadHomepageWorlds(){
+  const target=document.getElementById('homeWorlds');
+  try{
+    const response=await fetch('/join/servers.json');
+    if(!response.ok)return;
+    const config=await response.json();
+    if(!target?.isConnected||!Array.isArray(config.servers))return;
+    target.innerHTML=config.servers.map((server,index)=>`<a class="world-card" href="/join/?server=${encodeURIComponent(server.id)}"><span class="world-number">0${index+1}</span><div><span class="world-edition">${server.java&&server.bedrock?'JAVA + BEDROCK':server.bedrock?'BEDROCK EDITION':'JAVA EDITION'}</span><h3>${esc(server.name)}</h3><p>${esc(server.subtitle||server.description||'')}</p></div><span class="world-arrow" aria-hidden="true">↗</span></a>`).join('');
+    const discord=document.getElementById('homeDiscord');
+    if(discord&&typeof config.discordUrl==='string'&&/^https:\/\/discord\.(gg|com)\//.test(config.discordUrl)){discord.href=config.discordUrl;discord.target='_blank';discord.rel='noopener noreferrer'}
+  }catch{/* The existing Join Servers link remains available if configuration cannot load. */}
+}
 
 adminIntegrations=async function(){
   if(!await ensureAdmin())return;
