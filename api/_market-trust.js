@@ -4,6 +4,7 @@ export const marketQuery=(q,values=[])=>sql.query(q,values);
 export async function ensureTrustSchema(){
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verification_status VARCHAR(24) NOT NULL DEFAULT 'UNVERIFIED'");
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ");
+  await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS ticket_channel_id VARCHAR(20)");
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verification_source VARCHAR(20)");
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verification_reference VARCHAR(160)");
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verified_by TEXT");
