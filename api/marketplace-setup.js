@@ -1,6 +1,8 @@
 import {send,fail,readBody,requireAdmin,getSetting,setSetting,discordConfig,discordRequest} from './_lib.js';
 import {CHANNELS,USER_CHANNEL_IDS,isStaffPrivateChannel,marketChannelConfig,syncDashboard,postMarketGuide} from './_market-discord.js';
 import {sql} from './_lib.js';
+import {ensureTrustSchema} from './_market-trust.js';
+import {createMarketTicket,closeMarketTicket} from './_market-ticket.js';
 const digits=s=>/^\d{17,20}$/.test(String(s||''));
 const error=(text,status=400)=>Object.assign(new Error(text),{status});
 const query=(statement,params=[])=>sql.query(statement,params);
@@ -70,40 +72,7 @@ export default async function handler(req,res){
       try{dashboard=await syncDashboard(query)}catch(e){errors.push('Dashboard: '+String(e.message).slice(0,140))}
       return send(res,200,{ok:true,guild_id:guildId,channels:found,commands,guide,dashboard,warnings:errors});
     }
-    if(op==='setup'){
-      const guildId=String(body.guild_id||'').trim();
-      if(!digits(guildId))throw error('Enter your Discord Server (Guild) ID, 17–20 digits.');
-      const {bot,eligible}=await memberAccess(guildId);
-      const all=await botRequest('/guilds/'+guildId+'/channels');
-      const configured={...current.channels},created=[],reused=[];
-      for(const [key,name] of Object.entries(CHANNELS)){
-        const privateChannel=['security','dashboard'].includes(key);
-        let channel=all.find(c=>c.type===0&&c.name===name);
-        if(channel){
-          if(privateChannel&&!isPrivate(channel,guildId))throw error('Existing #'+name+' is publicly visible. Make it staff-only in Discord before reusing it.',409);
-          reused.push(name);
-        }else{
-          const permission_overwrites=privateChannel?[
-            {id:guildId,type:0,allow:'0',deny:'1024'},
-            ...eligible.map(id=>({id,type:0,allow:'68608',deny:'0'})),
-            {id:bot.id,type:1,allow:'68608',deny:'0'}
-          ]:undefined;
-          channel=await botRequest('/guilds/'+guildId+'/channels',{
-            method:'POST',body:JSON.stringify({name,type:0,topic:privateChannel?'Private AbszRPG Marketplace staff operations.':'AbszRPG Player Marketplace · https://abszrpg.shop/marketplace/',permission_overwrites})
-          });
-          created.push(name);
-          all.push(channel);
-        }
-        configured[key]=channel.id;
-        // Checkpoint after each creation: retry will reuse named channels without duplicating.
-        await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels:configured});
-      }
-      const warnings=[];
-      try{await installCommands(guildId,bot.id)}catch(e){warnings.push('Slash commands: '+String(e.message).slice(0,140))}
-      try{await postMarketGuide()}catch(e){warnings.push('Guide post: '+String(e.message).slice(0,140))}
-      try{await syncDashboard(query)}catch(e){warnings.push('Dashboard post: '+String(e.message).slice(0,140))}
-      return send(res,200,{ok:true,guild_id:guildId,created,reused,warnings,channels:configured});
-    }
+    if(op==='setup')throw error('Existing channels are already supplied. Use use_supplied_channels rather than creating any new channel.',409);
     if(op==='configure'){
       const guildId=String(body.guild_id||current.guild_id||'').trim();
       if(!digits(guildId))throw error('Valid Discord Guild ID required');
@@ -119,6 +88,13 @@ export default async function handler(req,res){
       }
       await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels,dashboard_message_id:null,guide_message_id:null});
       return send(res,200,{ok:true,channels});
+    }
+    if(op==='ticket_open'||op==='ticket_close'){
+      const orderId=String(body.order_id||'');
+      if(!/^[1-9]\d{0,17}$/.test(orderId))throw error('Invalid order ID');
+      await ensureTrustSchema();
+      const ticket=op==='ticket_open'?await createMarketTicket(orderId):await closeMarketTicket(orderId);
+      return send(res,200,{ok:true,ticket});
     }
     if(op==='register_commands'){
       if(!current.guild_id)throw error('Configure a Discord guild first',409);
