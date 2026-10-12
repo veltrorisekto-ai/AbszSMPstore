@@ -1,7 +1,18 @@
 {
   "version": 2,
   "functions": {
-    "api/discord.js": { "maxDuration": 30 }
+    "api/discord.js": {
+      "maxDuration": 30
+    },
+    "api/marketplace-setup.js": {
+      "maxDuration": 30
+    },
+    "api/marketplace.js": {
+      "maxDuration": 30
+    },
+    "api/market-proof.js": {
+      "maxDuration": 30
+    }
   },
   "rewrites": [
     {
