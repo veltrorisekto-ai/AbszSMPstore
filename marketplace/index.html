@@ -19,14 +19,14 @@
   <main id="main">
     <section class="banner">
       <div class="hero-content"><p class="eyebrow">THE PLAYER-TO-PLAYER EXCHANGE</p><h1>Trade your loot.<br><em>Build your legend.</em></h1>
-        <p>Discover treasures from fellow players across AbszoluteCraft worlds. Buy, sell and track trades — with seller profiles, verified-purchase reviews and an optional staff-supervised route.</p>
+        <p>Discover treasures from fellow players across AbszoluteCraft worlds. Buy, sell and track trades — with seller profiles, independently verified reviews and an optional staff-supervised route.</p>
         <div class="hero-actions"><button class="btn gold" id="browseButton">Explore Listings ↓</button><button class="btn green" id="sellButton">＋ Sell an Item</button></div>
         <p class="hero-note">Independent player listings · No automatic escrow or item delivery</p>
       </div>
     </section>
     <section class="trust-row wrapper" aria-label="Marketplace protections">
       <div><span>🛡</span><b>Staff-supervised option</b><small>Request a midman before exchanging anything</small></div>
-      <div><span>★</span><b>Purchase-based reviews</b><small>Reviews require a completed order</small></div>
+      <div><span>★</span><b>Purchase-based reviews</b><small>Reviews require independent trade evidence</small></div>
       <div><span>♜</span><b>Seller profiles</b><small>Check completed trades and staff verification</small></div>
     </section>
     <section class="wrapper market-layout" id="browse">
@@ -41,14 +41,14 @@
       <div class="items" id="listings"></div>
     </section>
     <section class="wrapper rules-section" id="rules">
-      <div><p class="eyebrow">TRADE SMART, TRADE SAFER</p><h2>Marketplace Safety Rules</h2><p class="muted">This site tracks orders, not actual Minecraft inventory or payments. Player usernames and Discord IDs are self-reported unless staff explicitly verifies them. A high rating does not guarantee a risk-free trade.</p></div>
+      <div><p class="eyebrow">TRADE SMART, TRADE SAFER</p><h2>Marketplace Safety Rules</h2><p class="muted">This site tracks orders, not actual Minecraft inventory or payments. It does not automatically verify item transfers. Player usernames and Discord IDs are self-reported unless staff explicitly verifies them. A high rating does not guarantee a risk-free trade.</p></div>
       <ol class="rule-grid">
         <li><b>Verify the server and item.</b><p>Confirm the edition, exact quantity, condition and agreed price before you make a trade.</p></li>
         <li><b>Use only official staff for midman trades.</b><p>Wait for approval and independently confirm the staff member inside the official Discord server. No impersonators.</p></li>
         <li><b>No early payment or delivery.</b><p>Never send money or valuables based on a screenshot, unverified message, or claim that escrow has been funded.</p></li>
         <li><b>Protect your account.</b><p>Never reveal Minecraft passwords, one-time codes, Discord recovery codes, or account access.</p></li>
         <li><b>Keep evidence and report disputes.</b><p>Save trade details, order ID, and Discord messages. Use Dispute if a live order has a problem.</p></li>
-        <li><b>Review after successful receipt.</b><p>Only the buyer can press Order Received after the seller confirms delivery. Honest reviews cannot be bought or traded.</p></li>
+        <li><b>Review after successful receipt.</b><p>Only the buyer can press Order Received after the seller confirms delivery. This does NOT verify a trade; seller reputation and reviews require independent staff or server evidence.</p></li>
       </ol>
       <div class="notice">Player-to-player sales must comply with AbszoluteCraft server rules, Minecraft/Mojang usage policies, and applicable laws. Staff-supervised means staff coordination, not a payment guarantee or automatic escrow. Off-site Discord payments and trades remain the responsibility of participants.</div>
     </section>
@@ -58,5 +58,6 @@
   <dialog id="modal"><div class="dialog-head"><h2 id="modalTitle">Marketplace</h2><button type="button" class="icon-button" id="closeModal" aria-label="Close dialog">×</button></div><div id="modalBody"></div></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="/marketplace/marketplace.js" defer></script>
+  <script src="/marketplace/trust-upgrades.js" defer></script>
 </body>
 </html>

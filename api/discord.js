@@ -2,6 +2,9 @@ import nacl from 'tweetnacl';
 import { waitUntil } from '@vercel/functions';
 import { setTimeout as delay } from 'node:timers/promises';
 import { joinReply } from './_join-panel.js';
+import { marketplaceButton, dashboardCounts } from './_market-discord.js';
+import { ensureTrustSchema, marketQuery } from './_market-trust.js';
+import { linkDiscord } from './_market-link.js';
 import { sql, send, fail, readRaw, discordConfig, audit, approvePaymentClaim } from './_lib.js';
 
 export const config = { api: { bodyParser: false } };
@@ -47,6 +50,18 @@ export default async function handler(req,res){
 
     const body=JSON.parse(raw||'{}');
     if(body.type===1)return send(res,200,{type:1});
+    if(body.type===2 && body.data?.name==='marketlink'){
+      const code=String(body.data?.options?.find(o=>o.name==='code')?.value||'');
+      const actor=String(body.member?.user?.id||body.user?.id||'');
+      await ensureTrustSchema();
+      const linked=await linkDiscord(actor,code);
+      return interaction(res,'✅ Discord linked to marketplace account **'+linked.username+'**. This is identity verification, not proof of a completed trade.');
+    }
+    if(body.type===2 && body.data?.name==='marketstats'){
+      await ensureTrustSchema();
+      const c=await dashboardCounts(marketQuery);
+      return interaction(res,'📊 **AbszRPG Marketplace**\nActive listings: '+c.listings+'\nVerified reputation trades: '+c.verified+'\nUnverified completed: '+c.unverified+'\nPending: '+c.pending+'\nDisputes: '+c.disputes+'\nOpen https://abszrpg.shop/marketplace/');
+    }
     if(body.type!==3)return interaction(res,'Unsupported Discord interaction.');
     if(String(body.data?.custom_id||'').startsWith('abszjoin:')) {
       const reply = joinReply(body.data.custom_id);
@@ -56,6 +71,10 @@ export default async function handler(req,res){
         waitUntil(finished.then(() => dismissJoinReply(body.application_id, body.token)));
       }
       return send(res,200,reply);
+    }
+    if(String(body.data?.custom_id||'').startsWith('abszmarket:')){
+      const response=marketplaceButton(body.data.custom_id);
+      return response?send(res,200,response):interaction(res,'Unknown marketplace action. Use https://abszrpg.shop/marketplace/.');
     }
     cfg=cfg||await discordConfig();
     if(cfg.approvalChannel&&String(body.channel_id)!==String(cfg.approvalChannel))return interaction(res,'This approval button is not valid in this channel.');
