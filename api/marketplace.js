@@ -6,6 +6,7 @@ import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
 import { issueLinkCode } from './_market-link.js';
 import { ensureIdentitySchema,identityState,requireTripleVerified } from './_market-identity.js';
 import { beginWhatsApp,confirmWhatsApp } from './_market-whatsapp.js';
+import {ensureSellerQR,registerQR,approveQR,getSellerQR} from './_market-qr.js';
 import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
 // Player marketplace is deliberately isolated from the official store order/bridge tables.
@@ -16,7 +17,7 @@ const USERNAME=/^[a-zA-Z0-9_.-]{3,32}$/;
 const DISCORD_ID=/^\d{17,20}$/;
 const VALID_SERVERS=['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'];
 const VALID_CATEGORIES=['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'];
-const VALID_CURRENCIES=['COINS'];
+const VALID_CURRENCIES=['COINS','MYR'];
 const validID=(value)=>/^[1-9]\d{0,17}$/.test(String(value||''))?String(value):null;
 function notify(kind,payload={},dashboard=true){
   try{
@@ -40,6 +41,7 @@ async function schema(){
     await query("CREATE INDEX IF NOT EXISTS market_reviews_seller ON market_reviews(seller_id,created_at DESC)");
     await ensureTrustSchema();
     await ensureIdentitySchema();
+    await ensureSellerQR();
     await query("CREATE UNIQUE INDEX IF NOT EXISTS market_verified_discord_identity ON market_players(discord_id) WHERE is_verified=true");
   })().catch(e=>{schemaPromise=null;throw e;});
   return schemaPromise;
@@ -111,9 +113,9 @@ export default async function handler(req,res){
       const user=await account(req);
       const [listings,orders]=await Promise.all([
         query("SELECT id,title,server,category,stock,currency,unit_price,status,created_at FROM market_listings WHERE seller_id=$1 AND status<>'REMOVED' ORDER BY created_at DESC LIMIT 100",[user.id]),
-        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
+        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,o.payment_status,o.qr_snapshot_url,o.qr_recipient_snapshot,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
       ]);
-      return send(res,200,{ok:true,user:await accountOverview(user),listings,orders});
+      return send(res,200,{ok:true,user:await accountOverview(user),seller_qr:await getSellerQR(user.id),listings,orders});
     }
     if(op==='stats')return send(res,200,{ok:true,stats:await dashboardCounts(query)});
     if(op==='listing'){
@@ -128,13 +130,14 @@ export default async function handler(req,res){
     }
     if(op==='admin'){
       await requireAdmin(req);
-      const [orders,sellers,listings,verified]=await Promise.all([
+      const [orders,sellers,listings,verified,qr_submissions]=await Promise.all([
         query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,o.verification_status,o.risk_note,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') OR (o.status='COMPLETED' AND o.verification_status<>'VERIFIED') ORDER BY o.created_at DESC LIMIT 100"),
         query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
         query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100"),
-        query("SELECT o.id,o.verification_source,o.verification_reference,o.reputation_eligible,l.title,b.username buyer_name,s.username seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.verification_status='VERIFIED' ORDER BY o.verified_at DESC LIMIT 30")
+        query("SELECT o.id,o.verification_source,o.verification_reference,o.reputation_eligible,l.title,b.username buyer_name,s.username seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.verification_status='VERIFIED' ORDER BY o.verified_at DESC LIMIT 30"),
+        query("SELECT qr.seller_id,qr.recipient_name,qr.qr_image_url,qr.submitted_at,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status='PENDING' ORDER BY qr.submitted_at DESC LIMIT 100")
       ]);
-      return send(res,200,{ok:true,orders,sellers,listings,verified});
+      return send(res,200,{ok:true,orders,sellers,listings,verified,qr_submissions});
     }
     throw bad('Unknown operation');
   }
@@ -189,6 +192,10 @@ export default async function handler(req,res){
       notify('security',{order_id:id,reason:'Previously verified trade revoked: '+reason});
       return send(res,200,{ok:true});
     }
+    if(op==='admin_qr_approve'||op==='admin_qr_reject'){
+      const result=await approveQR(id,admin.id,op==='admin_qr_approve',body.notes);
+      return send(res,200,{ok:true,...result});
+    }
     if(op==='admin_midman'){
       const rows=await query("UPDATE market_orders SET status='IN_PROGRESS',midman_approved_by=$2,midman_approved_at=now(),updated_at=now() WHERE id=$1 AND status='AWAITING_MIDMAN' RETURNING id",[id,String(admin.id)]);
       if(!rows.length)throw bad('Trade is not awaiting a midman',409);
@@ -237,11 +244,20 @@ export default async function handler(req,res){
     const challenge=await issueLinkCode(user.id,purpose);
     return send(res,201,{ok:true,...challenge});
   }
+  if(op==='seller_qr_submit'){
+    const result=await registerQR(user.id,body);
+    notify('security',{seller:user.username,status:'Seller QR awaiting owner review',reason:'Check that the recipient name matches the authorized seller before approving'},false);
+    return send(res,201,{ok:true,...result});
+  }
   if(op==='create_listing'){
     await requireTripleVerified(user.id);
     const title=clean(body.title,100),description=clean(body.description,1600),server=clean(body.server,40),category=clean(body.category,40),currency=clean(body.currency,8),price=Number(body.unit_price),stock=Number(body.stock),image=clean(body.image_url,500);
     if(title.length<5||description.length<15||!VALID_SERVERS.includes(server)||!VALID_CATEGORIES.includes(category)||!VALID_CURRENCIES.includes(currency)||!Number.isSafeInteger(price)||price<1||price>100000000||!Number.isSafeInteger(stock)||stock<1||stock>100000)throw bad('Check title, description, server, category, price and stock');
     if(image&&(!/^https:\/\/[^\s"<>]+$/i.test(image)||image.includes('@')))throw bad('Use a public HTTPS image URL or leave it blank');
+    if(currency==='MYR'){
+      const qr=await getSellerQR(user.id);
+      if(qr?.status!=='APPROVED')throw bad('A staff-approved seller QR is required before publishing RM listings.',403);
+    }
     const [count]=await query("SELECT count(*)::int AS n FROM market_listings WHERE seller_id=$1 AND status='ACTIVE'",[user.id]);
     if(count.n>=30)throw bad('Maximum 30 active listings per seller',409);
     const [listing]=await query("INSERT INTO market_listings(seller_id,title,description,server,category,currency,unit_price,stock,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",[user.id,title,description,server,category,currency,price,stock,image||null]);
@@ -277,6 +293,9 @@ export default async function handler(req,res){
     const [sellerForIdentity]=await query("SELECT seller_id FROM market_listings WHERE id=$1",[id]);
     if(!sellerForIdentity)throw bad('Listing not available',404);
     await requireTripleVerified(sellerForIdentity.seller_id);
+    const [listingCurrency]=await query("SELECT currency,seller_id FROM market_listings WHERE id=$1",[id]);
+    const sellerQR=listingCurrency?.currency==='MYR'?await getSellerQR(listingCurrency.seller_id):null;
+    if(listingCurrency?.currency==='MYR'&&sellerQR?.status!=='APPROVED')throw bad('Seller does not have an approved QR recipient. Do not transfer money.',409);
     const initial=method==='MIDMAN'?'AWAITING_MIDMAN':'PENDING_SELLER';
     const [limit]=await query("SELECT count(*)::int AS count FROM market_orders WHERE buyer_id=$1 AND status IN ('AWAITING_MIDMAN','PENDING_SELLER','IN_PROGRESS','DELIVERED')",[user.id]);
     if(limit.count>=10)throw bad('Too many unfinished orders; resolve existing trades before purchasing again',429);
@@ -285,6 +304,9 @@ export default async function handler(req,res){
       (counterparty.seller_uuid&&counterparty.seller_uuid===counterparty.buyer_uuid)))throw bad('Trade between the same linked identity is prohibited',409);
     const rows=await query("WITH held AS (UPDATE market_listings l SET stock=l.stock-$2,updated_at=now() FROM market_players s WHERE l.id=$1 AND s.id=l.seller_id AND s.is_banned=false AND l.status='ACTIVE' AND l.stock >= $2 AND l.seller_id<>$3 RETURNING l.id,l.seller_id,l.unit_price,l.currency), placed AS (INSERT INTO market_orders(listing_id,buyer_id,seller_id,quantity,unit_price,currency,method,status) SELECT held.id,$3,held.seller_id,$2,held.unit_price,held.currency,$4,$5 FROM held RETURNING id,status,seller_id) SELECT * FROM placed",[id,quantity,user.id,method,initial]);
     if(!rows.length)throw bad('Listing unavailable, insufficient stock or you are the seller',409);
+    if(sellerQR&&listingCurrency?.currency==='MYR'){
+      await query("UPDATE market_orders SET payment_status='WAITING',qr_snapshot_url=$2,qr_recipient_snapshot=$3 WHERE id=$1",[rows[0].id,sellerQR.qr_image_url,sellerQR.recipient_name]);
+    }
     if(method==='MIDMAN')notify('middleman',{order_id:rows[0].id,status:'Awaiting official staff'});
     const [activity]=await query("SELECT count(*)::int AS count FROM market_orders WHERE buyer_id=$1 AND seller_id=$2 AND created_at>now()-interval '24 hours'",[user.id,counterparty?.seller_id||rows[0].seller_id]);
     if(activity.count>=5)notify('security',{order_id:rows[0].id,reason:'Repeated buyer/seller orders within 24 hours; manual anti-collusion review required'});
@@ -297,6 +319,18 @@ export default async function handler(req,res){
   if(['accept','delivered','received','review'].includes(op)){
     await requireTripleVerified(user.id);
   }
+  if(op==='payment_claim'){
+    if(!buyer||order.currency!=='MYR'||order.status!=='IN_PROGRESS')throw bad('Buyer may claim QR payment only after the trade begins',409);
+    const rows=await query("UPDATE market_orders SET payment_status='CLAIMED',payment_claimed_at=now(),updated_at=now() WHERE id=$1 AND buyer_id=$2 AND currency='MYR' AND status='IN_PROGRESS' AND payment_status='WAITING' RETURNING id",[id,user.id]);
+    if(!rows.length)throw bad('Payment already claimed or order state changed',409);
+    return send(res,200,{ok:true,message:'Seller must check actual incoming funds in their bank/e-wallet. A screenshot is not proof of payment.'});
+  }
+  if(op==='payment_confirm'){
+    if(!seller||order.currency!=='MYR'||order.status!=='IN_PROGRESS')throw bad('Only seller may confirm direct QR funds after checking bank account',409);
+    const rows=await query("UPDATE market_orders SET payment_status='SELLER_CONFIRMED',payment_confirmed_at=now(),updated_at=now() WHERE id=$1 AND seller_id=$2 AND payment_status='CLAIMED' AND status='IN_PROGRESS' RETURNING id",[id,user.id]);
+    if(!rows.length)throw bad('Buyer has not claimed payment or funds confirmation is already recorded',409);
+    return send(res,200,{ok:true,message:'Seller confirmed incoming money manually. This is not independent payment verification.'});
+  }
   if(op==='accept'){
     if(!seller||order.status!=='PENDING_SELLER')throw bad('Only the seller can accept a pending direct trade',409);
     await query("UPDATE market_orders SET status='IN_PROGRESS',updated_at=now() WHERE id=$1 AND status='PENDING_SELLER'",[id]);
@@ -304,6 +338,7 @@ export default async function handler(req,res){
   }
   if(op==='delivered'){
     if(!seller||order.status!=='IN_PROGRESS')throw bad('Seller may mark delivery only after the trade is in progress',409);
+    if(order.currency==='MYR'&&order.payment_status!=='SELLER_CONFIRMED')throw bad('Confirm actual QR payment before marking an RM order delivered',409);
     await query("UPDATE market_orders SET status='DELIVERED',updated_at=now() WHERE id=$1 AND status='IN_PROGRESS'",[id]);
     return send(res,200,{ok:true,message:'Buyer must independently confirm receipt.'});
   }
@@ -316,6 +351,7 @@ export default async function handler(req,res){
   if(op==='cancel'){
     if(!buyer&&!seller)throw bad('Unauthorized',403);
     if(order.status!=='PENDING_SELLER'&&order.status!=='AWAITING_MIDMAN')throw bad('Open a dispute after trading has started',409);
+    if(order.currency==='MYR'&&order.payment_status!=='WAITING')throw bad('A claimed QR payment requires staff review before cancellation',409);
     await doCancel(id,"status IN ('PENDING_SELLER','AWAITING_MIDMAN') AND (buyer_id="+String(user.id)+" OR seller_id="+String(user.id)+")");
     return send(res,200,{ok:true});
   }
