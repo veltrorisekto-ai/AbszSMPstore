@@ -126,7 +126,7 @@ export default async function handler(req,res){
     }
     if(op==='session'){
       const user=await account(req,true).catch(()=>null);
-      return send(res,200,{ok:true,user:user?brief(user):null});
+      return send(res,200,{ok:true,user:user?await accountOverview(user):null});
     }
     if(op==='admin'){
       await requireAdmin(req);
@@ -261,7 +261,7 @@ export default async function handler(req,res){
     const [count]=await query("SELECT count(*)::int AS n FROM market_listings WHERE seller_id=$1 AND status='ACTIVE'",[user.id]);
     if(count.n>=30)throw bad('Maximum 30 active listings per seller',409);
     const [listing]=await query("INSERT INTO market_listings(seller_id,title,description,server,category,currency,unit_price,stock,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",[user.id,title,description,server,category,currency,price,stock,image||null]);
-    notify('marketplace',{listing_id:listing.id,seller_id:user.id,title,server,seller:user.username,price:price.toLocaleString('en-MY')+' coins',image});
+    notify('marketplace',{listing_id:listing.id,seller_id:user.id,title,server,seller:user.username,price:currency==='MYR'?'RM '+(price/100).toFixed(2):price.toLocaleString('en-MY')+' coins',image});
     return send(res,201,{ok:true,listing});
   }
   if(op==='listing_update'){
@@ -273,12 +273,12 @@ export default async function handler(req,res){
     const oldPrice=Number(listing.previous_price),oldStock=Number(listing.previous_stock);
     if(price<oldPrice||stock>oldStock){
       const status=price<oldPrice?'PRICE DROP':'RESTOCK';
-      notify('deals',{listing_id:id,title:listing.title,server:listing.server,seller:user.username,price:price.toLocaleString('en-MY')+' coins',status,reason:price<oldPrice?('Reduced from '+oldPrice.toLocaleString('en-MY')+' coins'):'Available stock increased to '+stock});
+      notify('deals',{listing_id:id,title:listing.title,server:listing.server,seller:user.username,price:listing.currency==='MYR'?'RM '+(price/100).toFixed(2):price.toLocaleString('en-MY')+' coins',status,reason:price<oldPrice?(listing.currency==='MYR'?'Reduced from RM '+(oldPrice/100).toFixed(2):'Reduced from '+oldPrice.toLocaleString('en-MY')+' coins'):'Available stock increased to '+stock});
     }
     return send(res,200,{ok:true,listing});
   }
   if(op==='listing_status'){
-    await requireTripleVerified(user.id);
+    if(body.status==='ACTIVE')await requireTripleVerified(user.id);
     const id=validID(body.id);if(!id)throw bad('Invalid listing');
     const next=body.status==='PAUSED'?'PAUSED':body.status==='ACTIVE'?'ACTIVE':null;
     if(!next)throw bad('Invalid listing status');
@@ -316,7 +316,7 @@ export default async function handler(req,res){
   const order=await getOrder(id,user);
   const buyer=String(order.buyer_id)===String(user.id),seller=String(order.seller_id)===String(user.id);
   // Existing orders remain readable and cancellable if an account loses verification.
-  if(['accept','delivered','received','review'].includes(op)){
+  if(['accept','delivered','received','review','payment_claim','payment_confirm'].includes(op)){
     await requireTripleVerified(user.id);
   }
   if(op==='payment_claim'){
@@ -352,7 +352,7 @@ export default async function handler(req,res){
     if(!buyer&&!seller)throw bad('Unauthorized',403);
     if(order.status!=='PENDING_SELLER'&&order.status!=='AWAITING_MIDMAN')throw bad('Open a dispute after trading has started',409);
     if(order.currency==='MYR'&&order.payment_status!=='WAITING')throw bad('A claimed QR payment requires staff review before cancellation',409);
-    await doCancel(id,"status IN ('PENDING_SELLER','AWAITING_MIDMAN') AND (buyer_id="+String(user.id)+" OR seller_id="+String(user.id)+")");
+    await doCancel(id,"status IN ('PENDING_SELLER','AWAITING_MIDMAN') AND (currency<>'MYR' OR payment_status='WAITING') AND (buyer_id="+String(user.id)+" OR seller_id="+String(user.id)+")");
     return send(res,200,{ok:true});
   }
   if(op==='dispute'){
