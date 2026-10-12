@@ -15,7 +15,18 @@ tradeLine=function(o){
  const badge=o.status==='COMPLETED'?(o.verification_status==='VERIFIED'
    ?'<div class="notice">✅ Independently verified by '+esc(o.verification_source||'staff')+'. '+(o.reputation_eligible?'This trade counts toward seller trust.':'Excluded from seller rankings due to reputation rules.')+'</div>'
    :'<div class="notice">⚠️ Unverified Completed — buyer confirmed receipt, but this has not been independently verified. +0 reputation; reviews locked.</div>'):'';
- return basic.replace('<div class="actions-flex">',badge+'<div class="actions-flex">');
+ const isBuyer=me&&String(o.buyer_id)===String(me.id),isSeller=me&&String(o.seller_id)===String(me.id);
+ let qr='';
+ if(o.currency==='MYR'&&o.status==='IN_PROGRESS'&&o.has_qr){
+  qr='<div class="notice"><b>Pay seller directly: '+money(o.unit_price*o.quantity,'MYR')+'</b>'
+    +'<p>Locked payment recipient: <strong>'+esc(o.qr_recipient_snapshot)+'</strong>. Verify this name in the bank app before paying.</p>'
+    +'<img src="'+('/api/marketplace?op=order_qr&amp;id='+encodeURIComponent(o.id))+'" loading="lazy" alt="Seller QR" style="display:block;width:100%;max-width:260px;border-radius:12px;margin:12px 0">'
+    +'<p>Transfer bank history is required. A screenshot is not proof and staff do not custody funds.</p></div>';
+  if(isBuyer&&o.payment_status==='WAITING')qr+='<button class="btn gold small" data-order-action="payment_claim" data-id="'+esc(o.id)+'">I Have Paid (Not Verified)</button>';
+  if(isSeller&&o.payment_status==='CLAIMED')qr+='<button class="btn green small" data-order-action="payment_confirm" data-id="'+esc(o.id)+'">I Checked Bank: Payment Received</button>';
+  if(o.payment_status==='SELLER_CONFIRMED')qr+='<div class="notice">Seller manually confirmed receipt. This is not independently verified payment.</div>';
+ }
+ return basic.replace('<div class="actions-flex">',badge+qr+'<div class="actions-flex">');
 };
 const originalSellerProfile=sellerProfile;
 sellerProfile=async function(id){
@@ -49,14 +60,21 @@ const originalMyTrades=myTrades;
 myTrades=async function(){
  await originalMyTrades();
  if(!me||!body.querySelector('#addFromMine'))return;
- const html='<div class="notice">Account linking: Discord '+(me.discord_linked?'✅ Linked':'⚠ Not linked')
- +' · Minecraft UUID '+(me.minecraft_linked?'✅ Linked':'⚠ Not linked')
- +'. Linked identities are required for trusted seller credit, but they are not proof of a trade.</div>'
- +'<div class="actions-flex"><button class="btn outline small" id="marketDiscordLink">Link Discord</button><button class="btn outline small" id="marketMinecraftLink">Link Minecraft (plugin required)</button></div>';
+ const html='<div class="notice"><b>Three verifications required before trading</b><p>Discord '+(me.discord_linked?'✅':'❌')+' · WhatsApp '+(me.whatsapp_linked?'✅ '+esc(me.whatsapp_masked||''):'❌')+' · Bedrock '+(me.bedrock_linked?'✅':'—')+' · Java '+(me.java_linked?'✅':'—')+'</p>'
+  +'<p>Trading: '+(me.ready?'✅ Verified':'🔒 Locked; Discord + WhatsApp + Bedrock OR Java required')+'. Bound accounts cannot be replaced. You may add Java to Bedrock.</p></div>'
+  +'<div class="actions-flex">'
+  +(!me.discord_linked?'<button class="btn outline small" id="marketDiscordLink">Verify Discord</button>':'')
+  +(!me.whatsapp_linked?'<button class="btn outline small" id="marketWhatsappLink">Verify WhatsApp OTP</button>':'')
+  +(!me.bedrock_linked?'<button class="btn outline small" id="marketBedrockLink">Link Bedrock (XUID)</button>':'')
+  +(!me.java_linked?'<button class="btn outline small" id="marketJavaLink">Add Java (UUID)</button>':'')
+  +'<button class="btn outline small" id="marketQRSetup">Seller QR Setup</button></div>';
  const anchor=body.querySelector('#addFromMine')?.closest('.actions-flex');
- if(anchor){anchor.insertAdjacentHTML('beforebegin',html)}
- $('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
- $('marketMinecraftLink').onclick=()=>marketLinkCode('MINECRAFT');
+ if(anchor)anchor.insertAdjacentHTML('beforebegin',html);
+ if($('marketDiscordLink'))$('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
+ if($('marketWhatsappLink'))$('marketWhatsappLink').onclick=verifyWhatsapp;
+ if($('marketBedrockLink'))$('marketBedrockLink').onclick=()=>marketLinkCode('MINECRAFT_BEDROCK');
+ if($('marketJavaLink'))$('marketJavaLink').onclick=()=>marketLinkCode('MINECRAFT_JAVA');
+ if($('marketQRSetup'))$('marketQRSetup').onclick=sellerQRSetup;
  try{
    const data=await call('me');
    for(const listing of data.listings){
@@ -66,18 +84,58 @@ myTrades=async function(){
  }catch{}
 
 };
+async function verifyWhatsapp(){
+ open('Verify WhatsApp','<div class="notice">Use your own WhatsApp number. A real OTP and third-party verification provider are required; the phone cannot be changed after verification.</div>'
+ +'<form id="whatsappForm"><div class="field"><label>WhatsApp Number (+country code)</label><input type="tel" name="phone" placeholder="+60123456789" required></div><button class="btn green">Send OTP</button></form>');
+ $('whatsappForm').onsubmit=async e=>{
+  e.preventDefault();
+  try{
+   await call('whatsapp_start',{phone:new FormData(e.currentTarget).get('phone')});
+   open('WhatsApp OTP','<p>Enter your WhatsApp code. Never share it with anyone.</p><form id="whatsappCheck"><div class="field"><label>OTP Code</label><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,10}" required></div><button class="btn green">Verify WhatsApp</button></form>');
+   $('whatsappCheck').onsubmit=async ev=>{ev.preventDefault();try{await call('whatsapp_check',{code:new FormData(ev.currentTarget).get('code')});await getSession();toast('WhatsApp verified and locked');myTrades()}catch(err){toast(err.message)}};
+  }catch(err){toast(err.message)}
+ };
+}
+async function sellerQRSetup(){
+ let data;try{data=await call('me')}catch(e){toast(e.message);return}
+ const qr=data.seller_qr;
+ if(qr){open('Your Seller QR','<div class="notice">Status: '+esc(qr.status)+' · Locked recipient: '+esc(qr.recipient_name)+'. QR changes require owner review.</div><img src="'+esc(qr.qr_image_url)+'" alt="Your Seller QR" style="max-width:260px;width:100%">');return}
+ open('Register Seller QR (Owner Review)','<p>QR must receive direct payment in the seller’s own bank/e-wallet account. No middleman holds funds in this flow.</p>'
+  +'<form id="qrForm"><div class="field"><label>Actual Bank / Wallet Recipient Name</label><input name="recipient_name" maxlength="120" minlength="4" required></div>'
+  +'<div class="field"><label>Upload your own QR (PNG, JPG or WebP, under 100KB)</label><input name="qr_file" type="file" accept="image/png,image/jpeg,image/webp"></div>'
+  +'<div class="field"><label>OR paste a public HTTPS image URL</label><input name="qr_image_url" type="url" placeholder="https://..."></div>'
+  +'<button class="btn green">Submit for Approval</button></form>');
+ $('qrForm').onsubmit=async e=>{
+  e.preventDefault();const f=new FormData(e.currentTarget),file=f.get('qr_file');
+  try{
+   let qr_image_url=String(f.get('qr_image_url')||'').trim();
+   if(file&&file.size){
+    if(file.size>100000)throw Error('Use an image smaller than 100KB');
+    qr_image_url=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result));
+      reader.onerror=()=>reject(new Error('QR file cannot be read'));
+      reader.readAsDataURL(file);
+    });
+   }
+   if(!qr_image_url)throw Error('Upload a QR picture or enter a public HTTPS image URL');
+   await call('seller_qr_submit',{recipient_name:f.get('recipient_name'),qr_image_url});
+   toast('QR submitted for owner approval');myTrades();
+  }catch(err){toast(err.message)}
+ };
+}
 async function sellerEditListing(id){
  if(!mustLogin())return;
  let r;try{r=await call('me')}catch(e){toast(e.message);return}
  const item=r.listings.find(x=>String(x.id)===String(id));if(!item)return toast('Listing not found');
  open('Update Listing','<p>'+esc(item.title)+' · '+esc(item.server)+'</p>'
-  +'<form id="listingUpdateForm"><div class="field"><label>IN-GAME COIN PRICE</label><input type="number" name="price" required min="1" max="100000000" step="1" value="'+Number(item.unit_price)+'"></div>'
+  +'<form id="listingUpdateForm"><div class="field"><label>PRICE ('+esc(item.currency)+')</label><input type="number" name="price" required min="'+(item.currency==='MYR'?'0.01':'1')+'" max="'+(item.currency==='MYR'?'1000000':'100000000')+'" step="'+(item.currency==='MYR'?'0.01':'1')+'" value="'+(item.currency==='MYR'?(Number(item.unit_price)/100).toFixed(2):Number(item.unit_price))+'"></div>'
   +'<div class="field"><label>AVAILABLE STOCK (0 = PAUSE)</label><input type="number" name="stock" required min="0" max="100000" step="1" value="'+Number(item.stock)+'"></div>'
   +'<div class="notice">Price drops and restocks can be announced in #marketplace-deals by the existing bot. Pending orders retain their original price.</div>'
   +'<button class="btn green">Save Changes</button></form>');
  $('listingUpdateForm').onsubmit=async event=>{
   event.preventDefault();const f=new FormData(event.currentTarget);
-  try{await call('listing_update',{id,unit_price:Number(f.get('price')),stock:Number(f.get('stock'))});toast('Listing updated');myTrades();refreshListings()}catch(e){toast(e.message)}
+  try{const amount=Number(f.get('price'));await call('listing_update',{id,unit_price:item.currency==='MYR'?Math.round(amount*100):amount,stock:Number(f.get('stock'))});toast('Listing updated');myTrades();refreshListings()}catch(e){toast(e.message)}
  };
 }
 async function existingBotChannels(){
@@ -109,6 +167,16 @@ async function existingBotChannels(){
    if(missing.length)open('Discord Panels · Some Channels Need Attention','<div class="notice">'+Number(d.posted_count||0)+'/8 panels updated.</div><p>'+esc(missing.join(' | '))+'</p>');
   }catch(e){toast(e.message)}
  };
+}
+async function staffResetSellerQR(sellerId){
+ const reason=prompt('Owner audit: why are you resetting this seller QR? (20+ characters)');
+ if(reason===null)return;
+ if(reason.trim().length<20)return toast('Please explain why the QR must be reset (at least 20 characters)');
+ try{
+  await call('admin_qr_reset',{id:sellerId,reason});
+  toast('Seller QR reset. Their next submission requires owner approval.');
+  ownerModeration();
+ }catch(e){toast(e.message)}
 }
 async function staffTicket(orderId,action){
  if(action==='ticket_close'&&!confirm('Archive this middleman ticket for staff-only access?'))return;
@@ -163,6 +231,17 @@ ownerModeration=async function(){
    box.insertAdjacentHTML('beforeend','<div class="actions-flex"><button class="btn green small" data-market-proof="'+order.id+'">Verify Evidence</button></div>');
   }
  }
+ if(data.qr_submissions?.length){
+  body.insertAdjacentHTML('beforeend','<hr class="divider"><h3>Pending Seller QR Approvals</h3>'
+   +data.qr_submissions.map(q=>'<div class="my-listing"><b>'+esc(q.seller_name)+'</b> · Recipient: '+esc(q.recipient_name)+'<p><img src="'+esc(q.qr_image_url)+'" alt="Seller QR for staff review" style="width:100%;max-width:220px"></p>'
+    +'<button class="btn green small" data-admin="admin_qr_approve" data-id="'+q.seller_id+'">Approve Seller QR</button> '
+    +'<button class="btn danger small" data-admin="admin_qr_reject" data-id="'+q.seller_id+'">Reject</button></div>').join(''));
+ }
+ if(data.qr_profiles?.length){
+  body.insertAdjacentHTML('beforeend','<hr class="divider"><h3>Registered Seller QR Accounts</h3>'
+   +data.qr_profiles.map(q=>'<div class="my-listing"><strong>'+esc(q.seller_name)+'</strong> · '+esc(q.status)+' · Recipient: '+esc(q.recipient_name)
+    +'<p class="muted">QR resets require an audit reason. Outstanding RM orders must be resolved first.</p><button class="btn outline small" data-qr-reset="'+q.seller_id+'">Owner Reset QR</button></div>').join(''));
+ }
  if(data.verified?.length){
   const section='<hr class="divider"><h3>Auditable Verified Credits</h3>'
    +data.verified.map(o=>'<div class="my-listing"><b>Order #'+o.id+' · '+esc(o.title)+'</b><p>Evidence: '+esc(o.verification_source)+' · '+esc(o.verification_reference)+' · '+(o.reputation_eligible?'Rank eligible':'Not ranked')+'</p><button class="btn danger small" data-market-revoke="'+o.id+'">Revoke Evidence</button></div>').join('');
@@ -170,13 +249,14 @@ ownerModeration=async function(){
  }
 };
 document.addEventListener('click',event=>{
- const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive],[data-market-edit]');
+ const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive],[data-market-edit],[data-qr-reset]');
  if(!el)return;
  if(el.dataset.marketProof)return ownerVerifyOrder(el.dataset.marketProof);
  if(el.dataset.marketRevoke)return ownerRevokeOrder(el.dataset.marketRevoke);
  if(el.dataset.marketTicket)return staffTicket(el.dataset.marketTicket,'ticket_open');
  if(el.dataset.marketArchive)return staffTicket(el.dataset.marketArchive,'ticket_close');
  if(el.dataset.marketEdit)return sellerEditListing(el.dataset.marketEdit);
+ if(el.dataset.qrReset)return staffResetSellerQR(el.dataset.qrReset);
 });
 (async()=>{
  const p=new URLSearchParams(location.search);

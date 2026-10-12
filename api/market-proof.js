@@ -3,6 +3,7 @@
 import { sql,send,fail,readBody,getSetting,bridgeKeyValid } from './_lib.js';
 import { ensureTrustSchema,verifyWithEvidence } from './_market-trust.js';
 import { linkMinecraft } from './_market-link.js';
+import { ensureIdentitySchema } from './_market-identity.js';
 import { sendMarketEvent,syncDashboard } from './_market-discord.js';
 import { waitUntil } from '@vercel/functions';
 const query=(statement,values=[])=>sql.query(statement,values);
@@ -18,21 +19,27 @@ export default async function handler(req,res){
   const body=await readBody(req);
   if(body.op==='link'){
     await ensureTrustSchema();
-    const result=await linkMinecraft({code:body.code,uuid:body.minecraft_uuid,username:body.minecraft_name,server:body.server});
+    const result=await linkMinecraft({code:body.code,edition:body.edition,identity:body.edition==='BEDROCK'?body.bedrock_xuid:body.minecraft_uuid,username:body.minecraft_name,server:body.server});
     return send(res,200,{ok:true,linked:result});
   }
   if(body.op!=='trade_proof')throw bad('Unknown Minecraft bridge operation');
   await ensureTrustSchema();
+  await ensureIdentitySchema();
   const orderId=String(body.order_id||''),server=String(body.server||'');
   const tx=String(body.transaction_id||''),itemEvent=String(body.item_event_id||''),coinEvent=String(body.coin_event_id||'');
   const buyerUuid=String(body.buyer_uuid||'').toLowerCase(),sellerUuid=String(body.seller_uuid||'').toLowerCase();
+  const buyerEdition=String(body.buyer_edition||'').toUpperCase(),sellerEdition=String(body.seller_edition||'').toUpperCase();
   const quantity=Number(body.quantity),coins=Number(body.coin_amount);
   if(!id(orderId)||!['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'].includes(server)||!proofId(tx)||!proofId(itemEvent)||!proofId(coinEvent)||itemEvent===coinEvent||
-     !uuid(buyerUuid)||!uuid(sellerUuid)||buyerUuid===sellerUuid||!Number.isSafeInteger(quantity)||quantity<1||
+     !['BEDROCK','JAVA'].includes(buyerEdition)||!['BEDROCK','JAVA'].includes(sellerEdition)||!buyerUuid||!sellerUuid||buyerUuid===sellerUuid||!Number.isSafeInteger(quantity)||quantity<1||
      !Number.isSafeInteger(coins)||coins<1||body.item_transfer!==true||body.coin_transfer!==true)throw bad('Malformed or incomplete two-sided server transaction evidence');
-  const [trade]=await query("SELECT o.id,o.status,o.quantity,o.unit_price,o.currency,o.verification_status,l.server,b.minecraft_uuid buyer_uuid,s.minecraft_uuid seller_uuid,b.minecraft_verified_at buyer_linked,s.minecraft_verified_at seller_linked FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.id=$1",[orderId]);
+  const [trade]=await query("SELECT o.id,o.status,o.quantity,o.unit_price,o.currency,o.verification_status,l.server,b.id buyer_id,s.id seller_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.id=$1",[orderId]);
   if(!trade||trade.status!=='COMPLETED'||trade.currency!=='COINS')throw bad('Order must be fully buyer-confirmed before independent verification',409);
-  if(trade.server!==server||String(trade.buyer_uuid||'').toLowerCase()!==buyerUuid||String(trade.seller_uuid||'').toLowerCase()!==sellerUuid||!trade.buyer_linked||!trade.seller_linked)throw bad('Linked player UUIDs or server do not match the order',409);
+  const [buyerMatch,sellerMatch]=await Promise.all([
+    query("SELECT id FROM market_minecraft_identities WHERE player_id=$1 AND edition=$2 AND identity_value=$3",[trade.buyer_id,buyerEdition,buyerUuid]),
+    query("SELECT id FROM market_minecraft_identities WHERE player_id=$1 AND edition=$2 AND identity_value=$3",[trade.seller_id,sellerEdition,sellerUuid])
+  ]);
+  if(trade.server!==server||!buyerMatch.length||!sellerMatch.length)throw bad('Verified Minecraft identities or target server do not match the order',409);
   if(Number(trade.quantity)!==quantity||Number(trade.unit_price)*quantity!==coins)throw bad('Item quantity or paid coins differ from the order',409);
   const reference=server.replace(/\s+/g,'_')+':'+tx;
   const record=await query("INSERT INTO market_trade_proofs(order_id,source,server,transaction_id,buyer_uuid,seller_uuid,item_quantity,coin_amount) VALUES($1,'SERVER',$2,$3,$4,$5,$6,$7) ON CONFLICT(server,transaction_id) DO NOTHING RETURNING id",[orderId,server,tx,buyerUuid,sellerUuid,quantity,coins]);
