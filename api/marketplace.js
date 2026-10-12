@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { sql, send, fail, readBody, qs, requireAdmin, audit } from './_lib.js';
 import { waitUntil } from '@vercel/functions';
 import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
+import { issueLinkCode } from './_market-link.js';
 import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
 // Player marketplace is deliberately isolated from the official store order/bridge tables.
@@ -54,11 +55,11 @@ async function account(req,optional=false){
   if(a.length!==b.length||!crypto.timingSafeEqual(a,b)){if(optional)return null;throw bad('Invalid session',401);}
   let payload;try{payload=JSON.parse(Buffer.from(raw,'base64url').toString('utf8'));}catch{throw bad('Invalid session',401);}
   if(Date.now()>=Number(payload.exp))throw bad('Please sign in again',401);
-  const [user]=await query('SELECT id,username,discord_id,discord_name,is_verified,is_banned,session_version,created_at FROM market_players WHERE id=$1',[payload.id]);
+  const [user]=await query('SELECT id,username,discord_id,discord_name,is_verified,is_banned,session_version,created_at,discord_verified_at,minecraft_uuid,minecraft_verified_at FROM market_players WHERE id=$1',[payload.id]);
   if(!user||user.is_banned||Number(user.session_version)!==Number(payload.sv))throw bad('Session expired or account suspended',401);
   return user;
 }
-function brief(user){return {id:user.id,username:user.username,discord_id:user.discord_id,discord_name:user.discord_name,is_verified:user.is_verified,created_at:user.created_at};}
+function brief(user){return {id:user.id,username:user.username,discord_id:user.discord_id,discord_name:user.discord_name,is_verified:user.is_verified,discord_linked:Boolean(user.discord_verified_at),minecraft_linked:Boolean(user.minecraft_verified_at&&user.minecraft_uuid),created_at:user.created_at};}
 function sameOrigin(req){
   const host=req.headers.host||'';
   const origin=req.headers.origin;
@@ -215,6 +216,11 @@ export default async function handler(req,res){
     throw bad('Unknown admin action');
   }
   const user=await account(req);
+  if(op==='link_code'){
+    const purpose=String(body.purpose||'').toUpperCase();
+    const challenge=await issueLinkCode(user.id,purpose);
+    return send(res,201,{ok:true,...challenge});
+  }
   if(op==='create_listing'){
     const title=clean(body.title,100),description=clean(body.description,1600),server=clean(body.server,40),category=clean(body.category,40),currency=clean(body.currency,8),price=Number(body.unit_price),stock=Number(body.stock),image=clean(body.image_url,500);
     if(title.length<5||description.length<15||!VALID_SERVERS.includes(server)||!VALID_CATEGORIES.includes(category)||!VALID_CURRENCIES.includes(currency)||!Number.isSafeInteger(price)||price<1||price>100000000||!Number.isSafeInteger(stock)||stock<1||stock>100000)throw bad('Check title, description, server, category, price and stock');
