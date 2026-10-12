@@ -10,7 +10,7 @@ const USERNAME=/^[a-zA-Z0-9_.-]{3,32}$/;
 const DISCORD_ID=/^\d{17,20}$/;
 const VALID_SERVERS=['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'];
 const VALID_CATEGORIES=['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'];
-const VALID_CURRENCIES=['COINS','MYR'];
+const VALID_CURRENCIES=['COINS'];
 const validID=(value)=>/^[1-9]\d{0,17}$/.test(String(value||''))?String(value):null;
 let schemaPromise;
 async function schema(){
@@ -103,11 +103,12 @@ export default async function handler(req,res){
     }
     if(op==='admin'){
       await requireAdmin(req);
-      const [orders,sellers]=await Promise.all([
+      const [orders,sellers,listings]=await Promise.all([
         query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') ORDER BY o.created_at DESC LIMIT 100"),
-        query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100")
+        query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
+        query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100")
       ]);
-      return send(res,200,{ok:true,orders,sellers});
+      return send(res,200,{ok:true,orders,sellers,listings});
     }
     throw bad('Unknown operation');
   }
@@ -157,6 +158,16 @@ export default async function handler(req,res){
     }
     if(op==='admin_resume'){
       const rows=await query("UPDATE market_orders SET status='IN_PROGRESS',updated_at=now() WHERE id=$1 AND status='DISPUTED' RETURNING id",[id]);if(!rows.length)throw bad('Not disputed',409);return send(res,200,{ok:true});
+    }
+    if(op==='admin_ban'){
+      const rows=await query("UPDATE market_players SET is_banned=$2,session_version=session_version+1 WHERE id=$1 RETURNING id",[id,body.banned===true]);
+      if(!rows.length)throw bad('Player not found',404);
+      return send(res,200,{ok:true});
+    }
+    if(op==='admin_remove_listing'){
+      const rows=await query("UPDATE market_listings SET status='REMOVED',updated_at=now() WHERE id=$1 AND status IN ('ACTIVE','PAUSED') RETURNING id",[id]);
+      if(!rows.length)throw bad('Listing already removed',409);
+      return send(res,200,{ok:true});
     }
     if(op==='admin_verify'){
       const rows=await query('UPDATE market_players SET is_verified=$2 WHERE id=$1 RETURNING id',[id,body.verified===true]);
