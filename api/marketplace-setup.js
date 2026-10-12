@@ -3,6 +3,7 @@ import {CHANNELS,USER_CHANNEL_IDS,isStaffPrivateChannel,marketChannelConfig,sync
 import {sql} from './_lib.js';
 import {ensureTrustSchema} from './_market-trust.js';
 import {createMarketTicket,closeMarketTicket} from './_market-ticket.js';
+import {publishAllMarketplacePanels} from './_market-onboarding.js';
 const digits=s=>/^\d{17,20}$/.test(String(s||''));
 const error=(text,status=400)=>Object.assign(new Error(text),{status});
 const query=(statement,params=[])=>sql.query(statement,params);
@@ -60,17 +61,20 @@ export default async function handler(req,res){
         if(['security','dashboard'].includes(key)&&!await isStaffPrivateChannel(value))errors.push('#'+CHANNELS[key]+' must deny View Channel to @everyone');
         found[key]=value;
       }
-      if(errors.length)return send(res,409,{ok:false,error:'Staff channels are not private; no messages were posted.',errors});
+      // Public onboarding may proceed; private staff posts remain blocked until permissions are verified.
+      // See publishAllMarketplacePanels, which refuses security/dashboard posts unless staff-only.
+
       await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels:found});
       let commands=[];
       try{
         const bot=await botRequest('/users/@me');
         commands=await installCommands(guildId,bot.id);
       }catch(e){errors.push('Slash command registration: '+String(e.message).slice(0,160))}
-      let guide={posted:false},dashboard={posted:false};
-      try{guide=await postMarketGuide()}catch(e){errors.push('Guide: '+String(e.message).slice(0,140))}
-      try{dashboard=await syncDashboard(query)}catch(e){errors.push('Dashboard: '+String(e.message).slice(0,140))}
-      return send(res,200,{ok:true,guild_id:guildId,channels:found,commands,guide,dashboard,warnings:errors});
+      const published=await publishAllMarketplacePanels(query);
+      return send(res,200,{ok:published.posted_count>0,guild_id:guildId,channels:found,commands,
+       guide:published.channels.guide,dashboard:published.channels.dashboard,
+       channel_results:published.channels,posted_count:published.posted_count,
+       warnings:{...published.warnings,setup:errors}});
     }
     if(op==='setup')throw error('Existing channels are already supplied. Use use_supplied_channels rather than creating any new channel.',409);
     if(op==='configure'){
@@ -102,10 +106,11 @@ export default async function handler(req,res){
       const commands=await installCommands(current.guild_id,bot.id);
       return send(res,200,{ok:true,commands});
     }
-    if(op==='publish'){
-      const guide=await postMarketGuide();
-      const dashboard=await syncDashboard(query);
-      return send(res,200,{ok:true,guide,dashboard});
+    if(op==='publish'||op==='publish_all'){
+      const published=await publishAllMarketplacePanels(query);
+      return send(res,200,{ok:published.posted_count>0,
+       guide:published.channels.guide,dashboard:published.channels.dashboard,
+       channel_results:published.channels,posted_count:published.posted_count,warnings:published.warnings});
     }
     throw error('Unknown action');
   }catch(e){return fail(res,e)}
