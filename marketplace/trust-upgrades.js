@@ -17,10 +17,10 @@ tradeLine=function(o){
    :'<div class="notice">⚠️ Unverified Completed — buyer confirmed receipt, but this has not been independently verified. +0 reputation; reviews locked.</div>'):'';
  const isBuyer=me&&String(o.buyer_id)===String(me.id),isSeller=me&&String(o.seller_id)===String(me.id);
  let qr='';
- if(o.currency==='MYR'&&o.status==='IN_PROGRESS'&&o.qr_snapshot_url){
+ if(o.currency==='MYR'&&o.status==='IN_PROGRESS'&&o.has_qr){
   qr='<div class="notice"><b>Pay seller directly: '+money(o.unit_price*o.quantity,'MYR')+'</b>'
     +'<p>Locked payment recipient: <strong>'+esc(o.qr_recipient_snapshot)+'</strong>. Verify this name in the bank app before paying.</p>'
-    +'<img src="'+esc(o.qr_snapshot_url)+'" loading="lazy" alt="Seller QR" style="display:block;width:100%;max-width:260px;border-radius:12px;margin:12px 0">'
+    +'<img src="'+('/api/marketplace?op=order_qr&amp;id='+encodeURIComponent(o.id))+'" loading="lazy" alt="Seller QR" style="display:block;width:100%;max-width:260px;border-radius:12px;margin:12px 0">'
     +'<p>Transfer bank history is required. A screenshot is not proof and staff do not custody funds.</p></div>';
   if(isBuyer&&o.payment_status==='WAITING')qr+='<button class="btn gold small" data-order-action="payment_claim" data-id="'+esc(o.id)+'">I Have Paid (Not Verified)</button>';
   if(isSeller&&o.payment_status==='CLAIMED')qr+='<button class="btn green small" data-order-action="payment_confirm" data-id="'+esc(o.id)+'">I Checked Bank: Payment Received</button>';
