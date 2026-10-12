@@ -87,16 +87,16 @@ async function existingBotChannels(){
   if(!response.ok||!result.ok)throw Error(result.error||'Owner bot setup unavailable');
  }catch(e){open('Discord Bot Setup','<div class="notice critical">'+esc(e.message)+'</div><a class="btn gold" href="/admin/login">Owner Login</a>');return}
  open('Existing Discord Bot · 8 Channels',
- '<p>Use the Discord bot already connected to AbszRPG. All eight channel IDs have been supplied; no new bot or channel will be created.</p>'
+ '<p>Use the existing AbszRPG Discord bot. Publish a welcome/info panel to every channel, even before real player trades begin. There will be no fake sales, reviews or transactions.</p>'
  +Object.entries(result.names).map(([key,name])=>'<div class="my-listing"><strong>#'+esc(name)+'</strong> · <small>'+esc(result.config.channels[key]||'Not configured')+'</small></div>').join('')
  +'<div class="notice">Private security logs and staff dashboard will only publish after the bot confirms those channels deny View Channel to @everyone.</div>'
- +'<div class="form-row"><button class="btn green" id="link8Channels">Connect Existing 8 Channels</button><button class="btn outline" id="resyncBot">Update Guide & Dashboard</button></div>');
+ +'<div class="form-row"><button class="btn green" id="link8Channels">Connect Existing 8 Channels</button><button class="btn outline" id="resyncBot">Publish / Refresh All 8 Channels</button></div>');
  $('link8Channels').onclick=async()=>{
   $('link8Channels').disabled=true;
   try{
    const r=await fetch('/api/marketplace-setup',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({op:'use_supplied_channels'})});
    const d=await r.json();if(!r.ok||!d.ok)throw Error([d.error,...(d.errors||[])].filter(Boolean).join(' — '));
-   open('Discord Channels Connected','<div class="notice">Your original bot is now configured for the same 8 channels. Guide: '+(d.guide?.posted?'Published':'Not published')+'. Dashboard: '+(d.dashboard?.posted?'Published':'Not published')+'.</div>'
+   open('Discord Channels Connected','<div class="notice">Same bot, existing 8 channels. Panels published: '+Number(d.posted_count||0)+'/8. Guide: '+(d.guide?.posted?'Published':'Not published')+'. Dashboard: '+(d.dashboard?.posted?'Published':'Not published')+'.</div>'
     +'<p>'+esc((d.warnings||[]).join(' · ')||'No new bot or channel created.')+'</p>');
   }catch(e){toast(e.message);$('link8Channels').disabled=false}
  };
@@ -104,7 +104,9 @@ async function existingBotChannels(){
   try{
    const r=await fetch('/api/marketplace-setup',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({op:'publish'})});
    const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Publishing failed');
-   toast('Marketplace guide and dashboard synchronized');
+   toast('Published '+Number(d.posted_count||0)+'/8 marketplace channel panels.');
+   const missing=Object.entries(d.warnings||{}).map(([channel,reason])=>channel+': '+reason);
+   if(missing.length)open('Discord Panels · Some Channels Need Attention','<div class="notice">'+Number(d.posted_count||0)+'/8 panels updated.</div><p>'+esc(missing.join(' | '))+'</p>');
   }catch(e){toast(e.message)}
  };
 }
