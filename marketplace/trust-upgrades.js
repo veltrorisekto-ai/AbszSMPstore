@@ -111,13 +111,13 @@ async function sellerEditListing(id){
  let r;try{r=await call('me')}catch(e){toast(e.message);return}
  const item=r.listings.find(x=>String(x.id)===String(id));if(!item)return toast('Listing not found');
  open('Update Listing','<p>'+esc(item.title)+' · '+esc(item.server)+'</p>'
-  +'<form id="listingUpdateForm"><div class="field"><label>IN-GAME COIN PRICE</label><input type="number" name="price" required min="1" max="100000000" step="1" value="'+Number(item.unit_price)+'"></div>'
+  +'<form id="listingUpdateForm"><div class="field"><label>PRICE ('+esc(item.currency)+')</label><input type="number" name="price" required min="'+(item.currency==='MYR'?'0.01':'1')+'" max="'+(item.currency==='MYR'?'1000000':'100000000')+'" step="'+(item.currency==='MYR'?'0.01':'1')+'" value="'+(item.currency==='MYR'?(Number(item.unit_price)/100).toFixed(2):Number(item.unit_price))+'"></div>'
   +'<div class="field"><label>AVAILABLE STOCK (0 = PAUSE)</label><input type="number" name="stock" required min="0" max="100000" step="1" value="'+Number(item.stock)+'"></div>'
   +'<div class="notice">Price drops and restocks can be announced in #marketplace-deals by the existing bot. Pending orders retain their original price.</div>'
   +'<button class="btn green">Save Changes</button></form>');
  $('listingUpdateForm').onsubmit=async event=>{
   event.preventDefault();const f=new FormData(event.currentTarget);
-  try{await call('listing_update',{id,unit_price:Number(f.get('price')),stock:Number(f.get('stock'))});toast('Listing updated');myTrades();refreshListings()}catch(e){toast(e.message)}
+  try{const amount=Number(f.get('price'));await call('listing_update',{id,unit_price:item.currency==='MYR'?Math.round(amount*100):amount,stock:Number(f.get('stock'))});toast('Listing updated');myTrades();refreshListings()}catch(e){toast(e.message)}
  };
 }
 async function existingBotChannels(){
