@@ -21,7 +21,8 @@
       "description": "Explore, trade and build your way up in Season 6.",
       "icon": "💎",
       "java": {
-        "host": "AbszSMP.my.id"
+        "host": "AbszSMP.my.id",
+        "port": 19213
       },
       "bedrock": {
         "host": "AbszSMP.my.id",
