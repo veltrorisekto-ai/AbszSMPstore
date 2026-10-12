@@ -13,7 +13,7 @@ import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-disco
 const query=(statement,values=[])=>sql.query(statement,values);
 const bad=(message,status=400)=>Object.assign(new Error(message),{status});
 const clean=(value,max=120)=>String(value??'').trim().slice(0,max);
-const USERNAME=/^[a-zA-Z0-9_.-]{3,32}$/;
+const USERNAME=/^[a-zA-Z0-9_. -]{3,32}$/; // Bedrock gamertags may contain spaces; Java account identity is verified separately.
 const DISCORD_ID=/^\d{17,20}$/;
 const VALID_SERVERS=['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'];
 const VALID_CATEGORIES=['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'];
