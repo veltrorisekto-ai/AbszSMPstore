@@ -14,6 +14,12 @@ The public delivery notice and owner dashboard use the existing 90-second heartb
 
 Validation: `node --test tests/*.test.js` covers metadata sanitization/preservation, existing and restricted edition purchases, original price/quantity/command snapshots, sold-out handling, HTML escaping and heartbeat freshness. Browser visual QA was unavailable in the authoring session.
 
+## Search, sorting and store categories
+
+The homepage search opens `/store?q=...`. The Store has immediate keyword filtering, result counts, reset controls, and Featured, Price Low/High, Name A–Z/Z–A and Newest sorts. Search, sort and category selections are retained in the URL and work together; the original Weapons, Ranks, Crates, Bundles, Coins and Limited product types remain available.
+
+The additional categories are Bedrock Realms, Java 1.21.1, Economy, Merch and Physical Product. Assign them in the product editor under **Store categories**; assignments are stored as `delivery_payload.product_details.store_categories`, avoiding changes to existing product-type columns or database records. Confirmed Bedrock, RPG and Economy server metadata also supplies the respective world category. Unassigned legacy products remain under All Products and their existing types. Merch/Physical Product labels organize the catalogue; this update does not introduce shipping or a separate physical-goods fulfillment flow.
+
 ## Safety model
 
 The store boots in **Setup Mode** (`store.live = false`). Checkout cannot create orders until the owner explicitly presses **GO LIVE**. Launch is blocked unless the store has:

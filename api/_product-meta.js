@@ -1,5 +1,6 @@
 // Presentation metadata only. Never used to select a delivery worker or command.
 export const PRODUCT_SERVERS = ['bedrock-smp', 'economy-s6', 'rpg', 'legacy-harmony'];
+export const STORE_CATEGORIES = ['bedrock-realms', 'java-1-21-1', 'economy', 'merch', 'physical-product'];
 const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
 export function normalizeProductDetails(value) {
@@ -15,12 +16,13 @@ export function normalizeProductDetails(value) {
     duration: text(raw.duration, 120),
     benefits: Array.isArray(raw.benefits) ? raw.benefits.map(x => text(x, 200)).filter(Boolean).slice(0, 12) : [],
     restrictions: text(raw.restrictions, 2000),
-    screenshots
+    screenshots,
+    store_categories: Array.isArray(raw.store_categories) ? [...new Set(raw.store_categories.filter(x => STORE_CATEGORIES.includes(x)))] : []
   };
 }
 
 export function productPayload(previous, commands, details) {
   const payload = { ...(previous && typeof previous === 'object' ? previous : {}), commands };
-  if (details !== undefined) payload.product_details = normalizeProductDetails(details);
+  if (details !== undefined) payload.product_details = normalizeProductDetails({ ...payload.product_details, ...details });
   return payload;
 }

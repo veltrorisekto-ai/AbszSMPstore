@@ -33,6 +33,36 @@ syncChrome=function(){
 
 productCard=function(p){return `<article class="card"><a class="product-art" href="/product/${encodeURIComponent(p.slug)}" data-nav aria-label="View ${esc(p.name)}">${art(p)}</a><div class="product-body"><div class="product-badges"><span class="rarity ${esc(String(p.rarity).toLowerCase())}">${esc(p.rarity)}</span>${outOfStock(p)?'<span class="stock-badge">Sold out</span>':''}</div><h3>${esc(p.name)}</h3>${compatibilityMarkup(p,true)}<p>${esc(p.description||'Open this item for availability and purchase information.')}</p><div class="price-row">${priceMarkup(p)}<a class="btn ghost small" href="/product/${encodeURIComponent(p.slug)}" data-nav>View Item</a></div></div></article>`};
 
+function catalogueUrl(category,query,sort){
+  const params=new URLSearchParams();if(category!=='all')params.set('category',category);if(query)params.set('q',query);if(sort!=='featured')params.set('sort',sort);
+  return '/store'+(params.size?'?'+params.toString():'');
+}
+store=function(){
+  const params=new URLSearchParams(location.search),collections=AbszCatalog.categories;
+  const types={all:'All Products',weapons:'Weapons',ranks:'Ranks',crates:'Crates',bundles:'Bundles',coins:'Coins',limited:'Limited'};
+  const requested=params.get('category')||'all',category=Object.hasOwn(collections,requested)||Object.hasOwn(types,requested)?requested:'all';
+  const query=(params.get('q')||'').slice(0,120),sort=Object.hasOwn(AbszCatalog.sorts,params.get('sort'))?params.get('sort'):'featured';
+  const links=entries=>Object.entries(entries).map(([key,label])=>`<a class="chip ${key===category?'active':''}" ${key===category?'aria-current="page"':''} href="${esc(catalogueUrl(key,query,sort))}" data-category="${key}" data-nav>${esc(label)}</a>`).join('');
+  app.innerHTML=`<div class="container"><header class="page-header"><div class="eyebrow">The royal marketplace</div><h1>AbszoluteCraft Store</h1><p class="muted">${state.store.live?'Find your next favourite. Search, compare, and choose your reward.':'Browse the catalogue. Checkout remains locked while the store is in setup mode.'}</p></header><form class="catalogue-toolbar" id="catalogueSearch" role="search"><div class="catalogue-search"><label for="catalogueQuery">SEARCH PRODUCTS</label><div class="search-input-wrap"><span aria-hidden="true">⌕</span><input id="catalogueQuery" name="q" type="search" maxlength="120" placeholder="Search by product name or keyword…" value="${esc(query)}" autocomplete="off"></div></div><div class="catalogue-sort"><label for="catalogueSort">SORT BY</label><select id="catalogueSort" name="sort">${Object.entries(AbszCatalog.sorts).map(([value,label])=>`<option value="${value}" ${value===sort?'selected':''}>${esc(label)}</option>`).join('')}</select></div></form><div class="catalogue-group"><span class="catalogue-group-label">WORLDS & COLLECTIONS</span><div class="filters collection-filters">${links(collections)}</div></div><div class="catalogue-group"><span class="catalogue-group-label">PRODUCT TYPES</span><div class="filters type-filters">${links(types)}</div></div><div class="catalogue-results-bar"><p id="catalogueCount" aria-live="polite" role="status"></p><a class="text-link" href="/store" data-nav>Reset filters</a></div><div class="grid" id="catalogueGrid"></div></div>`;
+  const input=document.getElementById('catalogueQuery'),select=document.getElementById('catalogueSort'),grid=document.getElementById('catalogueGrid'),count=document.getElementById('catalogueCount');
+  const update=(writeUrl=true)=>{
+    const term=input.value.slice(0,120),order=select.value,shown=AbszCatalog.filterProducts(state.products,{category,query:term,sort:order});
+    grid.innerHTML=shown.length?shown.map(productCard).join(''):`<div class="panel catalogue-empty"><h2>${term.trim()?'No matching products':'No products in this category yet'}</h2><p>${term.trim()?'Try another name or keyword, or reset your filters.':'Check back for new additions, or browse all products.'}</p><a class="btn ghost" href="/store" data-nav>View all products</a></div>`;
+    count.textContent=`${shown.length} product${shown.length===1?'':'s'}${category==='all'?'':' in '+(collections[category]||types[category])}${term.trim()?' matching “'+term.trim()+'”':''}`;
+    document.querySelectorAll('[data-category]').forEach(link=>{link.href=catalogueUrl(link.dataset.category,term,order)});
+    if(writeUrl)history.replaceState({},'',catalogueUrl(category,term,order));
+  };
+  input.oninput=()=>update();select.onchange=()=>update();document.getElementById('catalogueSearch').onsubmit=event=>{event.preventDefault();update()};update(false);
+};
+
+const previousCatalogueHome=home;
+home=function(){
+  previousCatalogueHome();
+  const target=document.querySelector('.market-section');if(!target)return;
+  const icons={'bedrock-realms':'⛏️','java-1-21-1':'⚔️',economy:'💎',merch:'👕','physical-product':'📦'};
+  target.insertAdjacentHTML('beforebegin',`<section class="section collection-section"><div class="section-head"><div><div class="eyebrow">Find your collection</div><h2>Shop by world. Shop your way.</h2></div></div><form class="homepage-search" action="/store" method="get" role="search"><label class="visually-hidden" for="homepageQuery">Search the store</label><input id="homepageQuery" type="search" name="q" maxlength="120" placeholder="Search the store…"><button type="submit" class="btn primary">Search →</button></form><div class="category-row collection-row">${Object.entries(AbszCatalog.categories).map(([key,label])=>categoryLink(icons[key],label,key)).join('')}</div></section>`);
+};
+
 productPage=function(slug){
   const p=getProduct(slug);if(!p)return notFound();
   const d=productDetails(p),buy=state.store.live&&!outOfStock(p),screens=Array.isArray(d.screenshots)?d.screenshots.filter(x=>typeof x==='string'&&/^https:\/\//i.test(x)).slice(0,4):[];
@@ -57,13 +87,16 @@ function productDetailsFromForm(form){return {
   duration:String(form.get('product_duration')||''),
   benefits:String(form.get('product_benefits')||'').split('\n').map(x=>x.trim()).filter(Boolean),
   restrictions:String(form.get('product_restrictions')||''),
-  screenshots:String(form.get('product_screenshots')||'').split('\n').map(x=>x.trim()).filter(Boolean)
+  screenshots:String(form.get('product_screenshots')||'').split('\n').map(x=>x.trim()).filter(Boolean),
+  store_categories:form.getAll('store_category')
 }}
 const previousProductEditor=productEditor;
 productEditor=function(p){
   previousProductEditor(p);
   const form=document.getElementById('productForm');if(!form)return;
   const d=productDetails(p||{}),editions=Array.isArray(d.editions)?d.editions:[];
+  const typeLabel=form.querySelector('select[name="category"]')?.previousElementSibling;if(typeLabel)typeLabel.textContent='PRODUCT TYPE';
+  form.querySelector('button[type="submit"]').insertAdjacentHTML('beforebegin',`<fieldset class="product-metadata store-category-editor"><legend>Store categories</legend><p class="muted">Choose where this product appears. Its existing product type and delivery settings are preserved. Confirmed server compatibility also places it in the matching world category.</p><div class="store-category-options">${Object.entries(AbszCatalog.categories).map(([key,label])=>`<label><input type="checkbox" name="store_category" value="${key}" ${(d.store_categories||[]).includes(key)?'checked':''}> ${esc(label)}</label>`).join('')}</div></fieldset>`);
   form.querySelector('button[type="submit"]').insertAdjacentHTML('beforebegin',`<fieldset class="product-metadata"><legend>Compatibility & product details</legend><p class="muted">Enter only confirmed information. These labels do not change fulfillment commands or route delivery to another server. Existing products keep their current delivery behavior.</p><div class="field"><label for="product_server">SUPPORTED SERVER</label><select id="product_server" name="product_server"><option value="">Not confirmed — ask support</option>${Object.entries(productServerNames).map(([id,name])=>`<option value="${id}" ${d.server_id===id?'selected':''}>${esc(name)}</option>`).join('')}</select></div><div class="field"><span class="field-heading">SUPPORTED MINECRAFT EDITIONS</span><label><input type="checkbox" name="product_edition" value="JAVA" ${editions.includes('JAVA')?'checked':''}> Java</label><label><input type="checkbox" name="product_edition" value="BEDROCK" ${editions.includes('BEDROCK')?'checked':''}> Bedrock</label></div><div class="field"><label for="product_duration">DURATION (optional)</label><input id="product_duration" name="product_duration" maxlength="120" placeholder="For example: 30 days" value="${esc(d.duration||'')}"></div><div class="field"><label for="product_benefits">EXACT BENEFITS — one per line</label><textarea id="product_benefits" name="product_benefits" rows="4">${esc((d.benefits||[]).join('\n'))}</textarea></div><div class="field"><label for="product_restrictions">REQUIREMENTS & RESTRICTIONS</label><textarea id="product_restrictions" name="product_restrictions" maxlength="2000" rows="3">${esc(d.restrictions||'')}</textarea></div><div class="field"><label for="product_screenshots">REAL IN-GAME SCREENSHOT URLs — up to four HTTPS links</label><textarea id="product_screenshots" name="product_screenshots" rows="3">${esc((d.screenshots||[]).join('\n'))}</textarea></div></fieldset>`);
 };
 
