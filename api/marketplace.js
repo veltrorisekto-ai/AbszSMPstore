@@ -93,7 +93,7 @@ export default async function handler(req,res){
       const user=await account(req);
       const [listings,orders]=await Promise.all([
         query("SELECT id,title,server,category,stock,currency,unit_price,status,created_at FROM market_listings WHERE seller_id=$1 AND status<>'REMOVED' ORDER BY created_at DESC LIMIT 100",[user.id]),
-        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
+        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
       ]);
       return send(res,200,{ok:true,user:brief(user),listings,orders});
     }
