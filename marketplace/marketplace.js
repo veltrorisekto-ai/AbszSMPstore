@@ -104,10 +104,10 @@ function newListing(){
  +'<div class="field"><label>EXACT ITEM DESCRIPTION & DELIVERY TERMS</label><textarea name="description" required minlength="15" maxlength="1600" placeholder="Enchantments, item stats, server, trade location, price details and restrictions"></textarea></div>'
  +'<div class="form-grid"><div class="field"><label>SERVER</label><select name="server" required>'+options(servers.length?servers:['Bedrock Realms','Java 1.21.1','Economy','Other AbszSMP'],'Choose a server')+'</select></div>'
  +'<div class="field"><label>CATEGORY</label><select name="category" required>'+options(categories.length?categories:['Weapons','Armor','Tools','Blocks','Materials','Rare Items','Pets','Other'],'Choose a category')+'</select></div></div>'
- +'<div class="form-grid"><div class="field"><label>PRICE CURRENCY</label><select name="currency" id="currency" required><option value="COINS">In-game coins</option><option value="MYR">RM (manual / off-site)</option></select></div><div class="field"><label id="priceLabel">PRICE PER ITEM (COINS)</label><input type="number" name="price" min="1" max="100000000" step="1" required></div></div>'
+ +'<div class="form-grid"><div class="field"><label>PRICE CURRENCY</label><select name="currency" id="currency" required><option value="COINS">In-game coins (no real-money conversion)</option></select></div><div class="field"><label id="priceLabel">PRICE PER ITEM (COINS)</label><input type="number" name="price" min="1" max="100000000" step="1" required></div></div>'
  +'<div class="form-grid"><div class="field"><label>QUANTITY AVAILABLE</label><input type="number" name="stock" min="1" max="100000" step="1" required value="1"></div>'
  +'<div class="field"><label>HTTPS IMAGE URL (OPTIONAL)</label><input type="url" name="image_url" maxlength="500" placeholder="https://…"></div></div>'
- +'<div class="notice">Listings using real money must be allowed by applicable rules. Avoid account sales, duplication exploits, prohibited goods, or unsupported claims.</div>'
+ +'<div class="notice">In-game coins may not be cashed out, exchanged for real money, or transferred between servers. Avoid account sales, duplication exploits, prohibited goods, and false item claims.</div>'
  +'<div class="form-row"><button class="btn green" type="submit">Publish Listing</button></div></form>');
  $('currency').onchange=()=>{
   const rm=$('currency').value==='MYR';$('priceLabel').textContent=rm?'PRICE PER ITEM (RM)':'PRICE PER ITEM (COINS)';
@@ -250,13 +250,15 @@ async function ownerModeration(){
  +(o.status==='AWAITING_MIDMAN'?'<button class="btn green small" data-admin="admin_midman" data-id="'+o.id+'">Approve Supervision</button>':'<button class="btn gold small" data-admin="admin_resume" data-id="'+o.id+'">Resume Trade</button>')
  +'<button class="btn danger small" data-admin="admin_cancel" data-id="'+o.id+'">Cancel Order</button></div></div>').join(''):'<p class="muted">No pending requests or disputes.</p>')
  +'<hr class="divider"><h3>Seller Identity Checks</h3><p class="muted">Mark verified only after confirming this player owns their Minecraft/Discord identities. Verification is not a payment guarantee.</p>'
- +data.sellers.map(s=>'<div class="my-listing"><strong>'+esc(s.username)+'</strong> '+trusted(s)+'<p>Discord: '+esc(s.discord_name)+' · '+esc(s.discord_id)+'</p><button class="btn outline small" data-admin="admin_verify" data-id="'+s.id+'" data-verified="'+(s.is_verified?'false':'true')+'">'+(s.is_verified?'Remove Verification':'Staff-Verify Identity')+'</button></div>').join(''));
+ +data.sellers.map(s=>'<div class="my-listing"><strong>'+esc(s.username)+'</strong> '+trusted(s)+' '+(s.is_banned?'<span class="tag warn">Banned</span>':'')+'<p>Discord: '+esc(s.discord_name)+' · '+esc(s.discord_id)+'</p><div class="actions-flex"><button class="btn outline small" data-admin="admin_verify" data-id="'+s.id+'" data-verified="'+(s.is_verified?'false':'true')+'">'+(s.is_verified?'Remove Verification':'Staff-Verify Identity')+'</button><button class="btn danger small" data-admin="admin_ban" data-id="'+s.id+'" data-banned="'+(s.is_banned?'false':'true')+'">'+(s.is_banned?'Unban Player':'Ban Player')+'</button></div></div>').join('')
+ +'<hr class="divider"><h3>Moderate Listings</h3>'
+ +data.listings.map(l=>'<div class="my-listing"><strong>'+esc(l.title)+'</strong><p>Seller: '+esc(l.seller_name)+' · '+esc(l.status)+' · '+l.stock+' in stock</p><button class="btn danger small" data-admin="admin_remove_listing" data-id="'+l.id+'">Remove Listing</button></div>').join(''));
 }
 async function adminAction(button){
  const op=button.dataset.admin,id=button.dataset.id;
  if(!confirm(op==='admin_verify'?'Have you independently checked this player’s identity?':'Confirm this moderation action?'))return;
  button.disabled=true;
- try{await call(op,{id,verified:button.dataset.verified==='true'});toast('Moderation action saved');ownerModeration()}catch(e){toast(e.message);button.disabled=false}
+ try{await call(op,{id,verified:button.dataset.verified==='true',banned:button.dataset.banned==='true'});toast('Moderation action saved');ownerModeration()}catch(e){toast(e.message);button.disabled=false}
 }
 document.addEventListener('click',event=>{
  const el=event.target.closest('[data-buy],[data-seller],[data-sell],[data-order-action],[data-review],[data-dispute],[data-pause],[data-activate],[data-admin]');
