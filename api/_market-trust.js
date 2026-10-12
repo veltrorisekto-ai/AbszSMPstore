@@ -10,7 +10,10 @@ export async function ensureTrustSchema(){
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS reputation_eligible BOOLEAN NOT NULL DEFAULT FALSE");
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS risk_note TEXT");
   await marketQuery("ALTER TABLE market_players ADD COLUMN IF NOT EXISTS minecraft_uuid VARCHAR(36)");
+  await marketQuery("ALTER TABLE market_players ADD COLUMN IF NOT EXISTS discord_verified_at TIMESTAMPTZ");
   await marketQuery("ALTER TABLE market_players ADD COLUMN IF NOT EXISTS minecraft_verified_at TIMESTAMPTZ");
+  await marketQuery("CREATE TABLE IF NOT EXISTS market_link_codes (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,player_id BIGINT NOT NULL REFERENCES market_players(id),purpose VARCHAR(16) NOT NULL,code_hash VARCHAR(64) NOT NULL UNIQUE,expires_at TIMESTAMPTZ NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT now(),UNIQUE(player_id,purpose))");
+  await marketQuery("CREATE UNIQUE INDEX IF NOT EXISTS market_discord_link_one_to_one ON market_players(discord_id) WHERE discord_verified_at IS NOT NULL");
   await marketQuery("CREATE UNIQUE INDEX IF NOT EXISTS market_player_uuid_one_to_one ON market_players(minecraft_uuid) WHERE minecraft_uuid IS NOT NULL");
   await marketQuery("CREATE UNIQUE INDEX IF NOT EXISTS market_proof_unique ON market_orders(verification_source,verification_reference) WHERE verification_reference IS NOT NULL");
   await marketQuery("CREATE TABLE IF NOT EXISTS market_trade_proofs (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, order_id BIGINT NOT NULL REFERENCES market_orders(id), source VARCHAR(20) NOT NULL, server VARCHAR(48) NOT NULL, transaction_id VARCHAR(120) NOT NULL, buyer_uuid VARCHAR(36), seller_uuid VARCHAR(36), item_quantity INT NOT NULL, coin_amount BIGINT NOT NULL, submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(server,transaction_id))");
@@ -27,7 +30,7 @@ export async function fraudScore(order){
 export async function verifyWithEvidence({orderId,source,reference,actor,override=false}){
   if(!['STAFF','SERVER'].includes(source))throw Object.assign(new Error('Invalid evidence source'),{status:400});
   if(!/^[A-Za-z0-9_.:/-]{12,160}$/.test(String(reference||'')))throw Object.assign(new Error('Use a unique evidence or transaction reference (12–160 characters, no spaces)'),{status:400});
-  const [order]=await marketQuery("SELECT o.*,buyer.discord_id buyer_discord,buyer.minecraft_uuid buyer_uuid,seller.discord_id seller_discord,seller.minecraft_uuid seller_uuid FROM market_orders o JOIN market_players buyer ON buyer.id=o.buyer_id JOIN market_players seller ON seller.id=o.seller_id WHERE o.id=$1",[orderId]);
+  const [order]=await marketQuery("SELECT o.*,buyer.discord_id buyer_discord,buyer.discord_verified_at buyer_discord_verified,buyer.minecraft_uuid buyer_uuid,buyer.minecraft_verified_at buyer_minecraft_verified,seller.discord_id seller_discord,seller.discord_verified_at seller_discord_verified,seller.minecraft_uuid seller_uuid,seller.minecraft_verified_at seller_minecraft_verified FROM market_orders o JOIN market_players buyer ON buyer.id=o.buyer_id JOIN market_players seller ON seller.id=o.seller_id WHERE o.id=$1",[orderId]);
   if(!order)throw Object.assign(new Error('Order not found'),{status:404});
   if(order.status!=='COMPLETED')throw Object.assign(new Error('Order must be confirmed received by the buyer first'),{status:409});
   if(order.verification_status==='VERIFIED')return {already_verified:true,eligible:order.reputation_eligible,order};
@@ -36,8 +39,9 @@ export async function verifyWithEvidence({orderId,source,reference,actor,overrid
   const risk=await fraudScore(order);
   const suspicious=risk.same_pair_day>=5||risk.seller_disputes>=3;
   if(suspicious&&!override)throw Object.assign(new Error('Flagged repeated trades or disputes. Staff must investigate before trusting this claim.'),{status:409});
-  const eligible=!risk.eligible_pair_day&&!suspicious;
-  const note=suspicious?'MANUAL_OVERRIDE_SUSPICIOUS':risk.eligible_pair_day?'REPEATED_PAIR_24H':risk.same_pair_day>=3?'REPEATED_TRADES_REVIEW':'';
+  const bothLinked=Boolean(order.buyer_uuid&&order.seller_uuid&&order.buyer_minecraft_verified&&order.seller_minecraft_verified&&order.buyer_discord_verified&&order.seller_discord_verified);
+  const eligible=bothLinked&&!risk.eligible_pair_day&&!suspicious;
+  const note=suspicious?'MANUAL_OVERRIDE_SUSPICIOUS':risk.eligible_pair_day?'REPEATED_PAIR_24H':risk.same_pair_day>=3?'REPEATED_TRADES_REVIEW':!bothLinked?'ACCOUNT_LINKS_UNVERIFIED':'';
   let result;
   try {
     const rows=await marketQuery("UPDATE market_orders SET verification_status='VERIFIED',verification_source=$2,verification_reference=$3,verified_by=$4,verified_at=now(),reputation_eligible=$5,risk_note=$6,updated_at=now() WHERE id=$1 AND status='COMPLETED' AND verification_status<>'VERIFIED' RETURNING id,seller_id,buyer_id,verification_status,reputation_eligible",[orderId,source,reference,String(actor),eligible,note||null]);
