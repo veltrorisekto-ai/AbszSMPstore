@@ -302,7 +302,7 @@ export default async function handler(req,res){
     try{
       await query('INSERT INTO market_reviews(order_id,seller_id,buyer_id,stars,comment) VALUES($1,$2,$3,$4,$5)',[id,order.seller_id,user.id,stars,comment]);
     }catch(e){if(e.code==='23505'||String(e.message).includes('unique'))throw bad('Review already submitted for this order',409);throw e;}
-    notify('reviews',{order_id:id,seller:order.seller_name,buyer:order.buyer_name,verification:'Verified buyer: '+stars+'/5 stars'});
+    notify('reviews',{order_id:id,seller:order.seller_name,buyer:order.buyer_name,verification:'Independently verified trade',rating:stars+'/5 stars',review:comment});
     return send(res,201,{ok:true});
   }
   throw bad('Unknown operation');
