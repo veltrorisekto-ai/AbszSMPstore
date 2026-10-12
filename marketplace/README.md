@@ -6,7 +6,7 @@ This page is separate from the official Store and its Touch 'n Go checkout, Mine
 
 ## Player workflow
 1. Sign up using a Minecraft username, Discord user ID, Discord display name and strong password of 12 or more characters. Player accounts are **not** connected to Minecraft or Discord OAuth, so identities are initially self-declared and explicitly unverified. Use Discord Developer Mode > Copy User ID.
-2. Select **Sell an Item** to create a listing with category, server, exact item details, price, optional HTTPS image and stock. Prices support in-game coins or RM (manual off-site exchange only).
+2. Select **Sell an Item** to create a listing with category, server, exact item details, price, optional HTTPS image and stock. Prices support in-game coins only; no cash-out or conversion to RM.
 3. Browse and search listings, view seller profiles, completed-trade counts and reviews, and select **Buy Item**.
 4. Buyer selects a route: **Request Midman** for pending staff-supervised trading, or **Chat Seller on Discord** for a direct trade. The direct seller must accept the order before claiming delivery.
 5. When an order progresses the seller may click **Mark Item Delivered**. Only the buyer can click **Order Received** after actually receiving the item. This closes the order as completed.
@@ -26,12 +26,12 @@ This page is separate from the official Store and its Touch 'n Go checkout, Mine
 - One review per completed order, enforced by a database uniqueness constraint.
 - Direct Discord contact links to the seller-supplied Discord user ID. Seller identity is not independently verified until the owner marks it as manually checked.
 - No automatic Minecraft inventory inspection or item movement, no built-in external payment collection, custody, reversal, insurance, or escrow.
-- Staff-supervised means a manual staff workflow, not automated escrow or a payment guarantee.
+- Staff-supervised means a manual staff workflow, not automated escrow or a payment guarantee. Owner can ban fraudulent accounts and remove listings.
 - Two colluding accounts could falsify completed trades and reviews. Stronger anti-abuse, Discord OAuth and actual Minecraft delivery proofs are needed before treating seller ratings as fraud-proof.
 - No self-service marketplace password recovery or account-ID change workflow yet. The owner should establish a manual support and account-recovery policy.
 - Database setup uses CREATE TABLE IF NOT EXISTS only on new market_players, market_listings, market_orders and market_reviews tables. Existing official store data is not migrated or deleted.
 - Ensure the existing Neon DATABASE_URL and SESSION_SECRET are configured.
-- Specify eligible items and currencies in the server rules, confirm Minecraft/Mojang terms and any relevant local laws, and publish a dispute support channel.
+- Specify eligible items in the server rules, confirm Minecraft/Mojang terms and any relevant local laws, and publish a dispute support channel. In-game coins must not acquire real-world value or be exchanged for RM.
 - Review responses to external trades cannot reverse payments or force a seller to return items.
 
 ## Smoke test status
