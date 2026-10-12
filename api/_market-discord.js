@@ -1,5 +1,15 @@
 import { getSetting, setSetting, discordRequest } from './_lib.js';
 const WEB='https://abszrpg.shop/marketplace/';
+export const USER_CHANNEL_IDS=Object.freeze({
+  marketplace:'1559255601857433682',
+  deals:'1559269419786440805',
+  verified:'1559269472815161384',
+  reviews:'1559269515819356321',
+  middleman:'1559269556051255337',
+  guide:'1559269589102231592',
+  security:'1559270627234414743',
+  dashboard:'1559270798609485895'
+});
 export const CHANNELS={
   marketplace:'marketplace',
   deals:'marketplace-deals',
@@ -15,11 +25,19 @@ const trim=(s,n=220)=>String(s??'').replace(/[@\u200b]/g,'').slice(0,n);
 const valid=id=>/^\d{17,20}$/.test(String(id||''));
 export async function marketChannelConfig(){
   const c=await getSetting('marketplace_discord');
-  return {guild_id:valid(c.guild_id)?c.guild_id:null,channels:c.channels||{},dashboard_message_id:valid(c.dashboard_message_id)?c.dashboard_message_id:null,guide_message_id:valid(c.guide_message_id)?c.guide_message_id:null};
+  return {guild_id:valid(c.guild_id)?c.guild_id:null,channels:{...USER_CHANNEL_IDS,...(c.channels||{})},dashboard_message_id:valid(c.dashboard_message_id)?c.dashboard_message_id:null,guide_message_id:valid(c.guide_message_id)?c.guide_message_id:null};
+}
+export async function isStaffPrivateChannel(channelId){
+  if(!valid(channelId))return false;
+  const data=await discordRequest('/channels/'+channelId);
+  const everyone=(data.permission_overwrites||[]).find(p=>String(p.id)===String(data.guild_id));
+  const denial=BigInt(everyone?.deny||'0');
+  return data.type===0&&(denial & 1024n)===1024n;
 }
 export async function sendMarketEvent(kind,payload={}){
   const cfg=await marketChannelConfig(),channelId=cfg.channels[kind];
   if(!valid(channelId))return {posted:false,reason:'channel_not_configured'};
+  if(['security','dashboard'].includes(kind)&&!await isStaffPrivateChannel(channelId))return {posted:false,reason:'private_staff_access_not_verified'};
   const text=(s,n)=>trim(s,n);
   const titleMap={
     marketplace:'⚔️ New Player Listing',deals:'🏷️ Marketplace Deal',
@@ -78,6 +96,7 @@ export async function dashboardCounts(query){
 export async function syncDashboard(query){
   const cfg=await marketChannelConfig(),channelId=cfg.channels.dashboard;
   if(!valid(channelId))return {posted:false,reason:'dashboard_not_configured'};
+  if(!await isStaffPrivateChannel(channelId))return {posted:false,reason:'dashboard_not_private'};
   const stats=await dashboardCounts(query);
   const payload={allowed_mentions:{parse:[]},embeds:[{
     title:'📊 AbszRPG Marketplace · Live Dashboard',color:colors.dashboard,
