@@ -49,7 +49,7 @@ export async function sendMarketEvent(kind,payload={}){
   const push=(name,value)=>{if(value!==undefined&&value!==null&&String(value).length)fields.push({name,value:text(value,800),inline:fields.length<4})};
   push('Item',payload.title);push('Server',payload.server);push('Seller',payload.seller);
   push('Buyer',payload.buyer);push('Order ID',payload.order_id);push('Price',payload.price);
-  push('Status',payload.status);push('Verification',payload.verification);push('Reason',payload.reason);
+  push('Status',payload.status);push('Verification',payload.verification);push('Rating',payload.rating);push('Review',payload.review);push('Reason',payload.reason);
   const description=kind==='verified'
     ?'Verified after independent staff evidence review or trusted server evidence. Buyer confirmation alone never counts.'
     :kind==='middleman'?'New request recorded on the website. Staff must verify identities and transaction details before trade. No funds are automatically held.'
@@ -58,10 +58,10 @@ export async function sendMarketEvent(kind,payload={}){
     :'Player-to-player order tracking is on the website. Check seller reputation before trading.';
   const message={
     allowed_mentions:{parse:[]},
-    embeds:[{title:titleMap[kind]||'AbszRPG Marketplace',description,color:colors[kind]||0x38bdf8,fields,
+    embeds:[{title:titleMap[kind]||'AbszRPG Marketplace',	description,color:colors[kind]||0x38bdf8,fields,image:/^https:\/\/[^\s"<>]{4,500}$/i.test(String(payload.image||''))?{url:String(payload.image)}:undefined,
       timestamp:new Date().toISOString(),footer:{text:'AbszRPG Marketplace · One bot · Website authoritative'}}]
   };
-  if(kind==='marketplace'&&payload.listing_id){
+  if((kind==='marketplace'||kind==='deals')&&payload.listing_id){
     message.components=[{type:1,components:[
       {type:2,style:3,custom_id:'abszmarket:buy:'+String(payload.listing_id),label:'Buy Now'},
       {type:2,style:2,custom_id:'abszmarket:seller:'+String(payload.seller_id),label:'View Seller'},
