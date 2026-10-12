@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { productPayload } from './_product-meta.js';
 import {
   sql, send, fail, readBody, qs, randomToken, sha256, makeSession, sessionCookie,
   clearSessionCookie, requireAdmin, getSetting, setSetting, audit, discordConfig,
@@ -221,7 +222,8 @@ export default async function handler(req, res) {
       if (!/^[a-z0-9-]{2,80}$/.test(slug) || !name || !CATEGORIES.includes(category) || !RARITIES.includes(rarity)) return send(res,400,{ok:false,error:'Invalid product details'});
       if (!Number.isInteger(price) || price<0 || (sale!==null && (!Number.isInteger(sale)||sale<0)) || (stock!==null && (!Number.isInteger(stock)||stock<0))) return send(res,400,{ok:false,error:'Invalid price or stock'});
       const commands = Array.isArray(body.commands) ? body.commands.filter(x=>typeof x==='string'&&x.trim()&&x.length<=300).slice(0,20) : [];
-      const payload = {commands};
+      const previous = id ? (await sql`SELECT delivery_payload FROM products WHERE id=${id} LIMIT 1`)[0]?.delivery_payload : null;
+      const payload = productPayload(previous, commands, body.product_details);
       if (id) {
         await sql`UPDATE products SET slug=${slug},name=${name},category=${category},description=${String(body.description||'').slice(0,5000)},price_cents=${price},sale_price_cents=${sale},rarity=${rarity},image_data=${body.image||null},delivery_mode='COMMAND',delivery_payload=${JSON.stringify(payload)}::jsonb,active=${body.active!==false},stock=${stock},featured=${Boolean(body.featured)},updated_at=now() WHERE id=${id}`;
       } else {

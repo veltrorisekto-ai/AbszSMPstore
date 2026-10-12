@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
+import { normalizeProductDetails } from './_product-meta.js';
 
 export const sql = neon(process.env.DATABASE_URL || '');
 
@@ -126,7 +127,8 @@ export function publicProduct(row) {
     rarity: row.rarity,
     image: row.image_data,
     stock: row.stock,
-    featured: row.featured
+    featured: row.featured,
+    details: normalizeProductDetails(row.delivery_payload?.product_details)
   };
 }
 

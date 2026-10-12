@@ -1,4 +1,5 @@
 import { sql, send, fail, readBody, qs, randomToken, getSetting, audit, discordConfig, discordRequest } from './_lib.js';
+import { normalizeProductDetails } from './_product-meta.js';
 
 function validIgn(v){ return /^[A-Za-z0-9_ .-]{1,32}$/.test(String(v || '')); }
 
@@ -75,6 +76,8 @@ export default async function handler(req, res) {
         const rows = await sql`SELECT * FROM products WHERE slug=${slug} AND active=true LIMIT 1`;
         const product = rows[0];
         if (!product) return send(res, 400, { ok:false, error:`Product unavailable: ${slug}` });
+        const details = normalizeProductDetails(product.delivery_payload?.product_details);
+        if (details.editions.length && !details.editions.includes(platform)) return send(res, 400, { ok:false, error:`${product.name} is not configured for ${platform === 'JAVA' ? 'Java' : 'Bedrock'} Edition` });
         if (product.stock !== null && Number(product.stock) < qty) return send(res, 409, { ok:false, error:`Insufficient stock: ${product.name}` });
         const unit = Number(product.sale_price_cents ?? product.price_cents);
         total += unit * qty;

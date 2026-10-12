@@ -4,6 +4,16 @@ Production storefront for **AbszSMP — Return of Eldra, Season 5**.
 
 The repository contains the public store, owner control panel, Vercel Functions, Discord interaction endpoint, and the HTTP API used by AbszStoreBridge.
 
+## Product clarity update
+
+The royal storefront retains the original catalogue, prices, payments, private order tokens, owner panel and delivery integrations. `store-improvements.js` adds compatibility labels, line-preserving product descriptions, sale-price comparison, sold-out handling and purchase instructions.
+
+Edit a product in `/admin/products` to enter its confirmed server, Java/Bedrock editions, duration, exact benefits, restrictions and up to four HTTPS in-game screenshot URLs. These optional fields are stored in `delivery_payload.product_details`; they do not alter trusted commands or select a delivery server. Products without metadata show an explicit confirmation prompt. Configured edition restrictions are checked in both the checkout selector and order API; older unconfigured products keep both existing platform options.
+
+The public delivery notice and owner dashboard use the existing 90-second heartbeat window. A stale heartbeat does not prove that every Minecraft server is offline. Diagnostics list the expected endpoint `https://abszrpg.shop/api/bridge`; inspect the actual plugin and its logs before changing credentials. This update does not rotate bridge keys, restart servers, modify existing database records, or claim to repair an unverified remote connection.
+
+Validation: `node --test tests/*.test.js` covers metadata sanitization/preservation, existing and restricted edition purchases, original price/quantity/command snapshots, sold-out handling, HTML escaping and heartbeat freshness. Browser visual QA was unavailable in the authoring session.
+
 ## Safety model
 
 The store boots in **Setup Mode** (`store.live = false`). Checkout cannot create orders until the owner explicitly presses **GO LIVE**. Launch is blocked unless the store has:
