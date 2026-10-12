@@ -42,3 +42,7 @@ This page is separate from the official Store and its Touch 'n Go checkout, Mine
 - [x] Frontend and backend JavaScript syntax parsed.
 - [ ] End-to-end real-account testing of registration, purchases, moderation, delivery, review, cancellations and disputes remains to be completed.
 - [ ] Owner verification of the actual Discord staff midman process remains to be completed.
+
+## October 13 integration update
+
+The current marketplace gains an additive, independently verified-trade layer. Buyer confirmation stays unverified and gives no seller reputation, and reviews require independently verified reputation-eligible orders. The existing Discord bot is reused for eight supplied channel IDs, on-demand midman tickets, product/deal embeds, trusted review cards, and an updatable website-derived dashboard. See DISCORD-VERIFIED-TRADE-INTEGRATION.md for IDs, role requirements, evidence checks and the Minecraft plugin dependency.
