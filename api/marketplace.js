@@ -109,11 +109,32 @@ export default async function handler(req,res){
       ]);
       return send(res,200,{ok:true,seller:{...seller,...metrics[0]},reviews,listings});
     }
+    if(op==='order_qr'){
+      const id=validID(p.get('id'));if(!id)throw bad('Invalid order');
+      const viewer=await account(req);
+      const order=await getOrder(id,viewer);
+      if(order.status!=='IN_PROGRESS'||order.currency!=='MYR'||!order.qr_snapshot_url)throw bad('Seller QR is available only during an active RM order',403);
+      const img=String(order.qr_snapshot_url);
+      res.setHeader('cache-control','no-store');
+      res.setHeader('referrer-policy','no-referrer');
+      res.setHeader('x-content-type-options','nosniff');
+      if(/^https:\/\/[^\s"<>@]{12,500}$/i.test(img)){
+        res.statusCode=302;res.setHeader('location',img);return res.end();
+      }
+      const match=img.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/i);
+      if(!match)throw bad('Saved QR format not supported',409);
+      const bytes=Buffer.from(match[2],'base64');
+      if(bytes.length>105000)throw bad('QR image exceeds limit',413);
+      res.statusCode=200;
+      res.setHeader('content-type','image/'+match[1].toLowerCase());
+      res.setHeader('content-length',String(bytes.length));
+      return res.end(bytes);
+    }
     if(op==='me'){
       const user=await account(req);
       const [listings,orders]=await Promise.all([
         query("SELECT id,title,server,category,stock,currency,unit_price,status,created_at FROM market_listings WHERE seller_id=$1 AND status<>'REMOVED' ORDER BY created_at DESC LIMIT 100",[user.id]),
-        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,o.payment_status,o.qr_snapshot_url,o.qr_recipient_snapshot,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
+        query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,o.payment_status,(o.qr_snapshot_url IS NOT NULL) AS has_qr,o.qr_recipient_snapshot,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
       ]);
       return send(res,200,{ok:true,user:await accountOverview(user),seller_qr:await getSellerQR(user.id),listings,orders});
     }
@@ -135,7 +156,7 @@ export default async function handler(req,res){
         query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
         query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100"),
         query("SELECT o.id,o.verification_source,o.verification_reference,o.reputation_eligible,l.title,b.username buyer_name,s.username seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.verification_status='VERIFIED' ORDER BY o.verified_at DESC LIMIT 30"),
-        query("SELECT qr.seller_id,qr.recipient_name,qr.qr_image_url,qr.submitted_at,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status='PENDING' ORDER BY qr.submitted_at DESC LIMIT 100")
+        query("SELECT qr.seller_id,qr.recipient_name,qr.qr_image_url,qr.submitted_at,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status='PENDING' ORDER BY qr.submitted_at DESC LIMIT 10")
       ]);
       return send(res,200,{ok:true,orders,sellers,listings,verified,qr_submissions});
     }
