@@ -6,7 +6,7 @@ import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
 import { issueLinkCode } from './_market-link.js';
 import { ensureIdentitySchema,identityState,requireTripleVerified } from './_market-identity.js';
 import { beginWhatsApp,confirmWhatsApp } from './_market-whatsapp.js';
-import {ensureSellerQR,registerQR,approveQR,getSellerQR} from './_market-qr.js';
+import {ensureSellerQR,registerQR,approveQR,getSellerQR,resetQR} from './_market-qr.js';
 import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
 // Player marketplace is deliberately isolated from the official store order/bridge tables.
@@ -151,14 +151,15 @@ export default async function handler(req,res){
     }
     if(op==='admin'){
       await requireAdmin(req);
-      const [orders,sellers,listings,verified,qr_submissions]=await Promise.all([
+      const [orders,sellers,listings,verified,qr_submissions,qr_profiles]=await Promise.all([
         query("SELECT o.id,o.status,o.method,o.quantity,o.currency,o.unit_price,o.created_at,o.verification_status,o.risk_note,l.title,b.username AS buyer_name,s.username AS seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.status IN ('AWAITING_MIDMAN','DISPUTED') OR (o.status='COMPLETED' AND o.verification_status<>'VERIFIED') ORDER BY o.created_at DESC LIMIT 100"),
         query("SELECT id,username,discord_id,discord_name,is_verified,is_banned,created_at FROM market_players ORDER BY created_at DESC LIMIT 100"),
         query("SELECT l.id,l.title,l.status,l.stock,p.username AS seller_name FROM market_listings l JOIN market_players p ON p.id=l.seller_id WHERE l.status IN ('ACTIVE','PAUSED') ORDER BY l.created_at DESC LIMIT 100"),
         query("SELECT o.id,o.verification_source,o.verification_reference,o.reputation_eligible,l.title,b.username buyer_name,s.username seller_name FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players b ON b.id=o.buyer_id JOIN market_players s ON s.id=o.seller_id WHERE o.verification_status='VERIFIED' ORDER BY o.verified_at DESC LIMIT 30"),
-        query("SELECT qr.seller_id,qr.recipient_name,qr.qr_image_url,qr.submitted_at,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status='PENDING' ORDER BY qr.submitted_at DESC LIMIT 10")
+        query("SELECT qr.seller_id,qr.recipient_name,qr.qr_image_url,qr.submitted_at,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status='PENDING' ORDER BY qr.submitted_at DESC LIMIT 10"),
+        query("SELECT qr.seller_id,qr.recipient_name,qr.status,p.username seller_name FROM market_seller_qr qr JOIN market_players p ON p.id=qr.seller_id WHERE qr.status IN ('APPROVED','REJECTED') ORDER BY qr.submitted_at DESC LIMIT 50")
       ]);
-      return send(res,200,{ok:true,orders,sellers,listings,verified,qr_submissions});
+      return send(res,200,{ok:true,orders,sellers,listings,verified,qr_submissions,qr_profiles});
     }
     throw bad('Unknown operation');
   }
@@ -212,6 +213,10 @@ export default async function handler(req,res){
       await audit('ADMIN',String(admin.id),'MARKET_VERIFICATION_REVOKED',{order_id:id,reason});
       notify('security',{order_id:id,reason:'Previously verified trade revoked: '+reason});
       return send(res,200,{ok:true});
+    }
+    if(op==='admin_qr_reset'){
+      const result=await resetQR(id,admin.id,body.reason);
+      return send(res,200,{ok:true,...result});
     }
     if(op==='admin_qr_approve'||op==='admin_qr_reject'){
       const result=await approveQR(id,admin.id,op==='admin_qr_approve',body.notes);
