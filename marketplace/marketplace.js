@@ -12,7 +12,7 @@ const statusLabel=s=>({AWAITING_MIDMAN:'Waiting for staff',PENDING_SELLER:'Waiti
 function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),3700)}
 async function call(op,data){
   const isPost=data!==undefined;
-  const response=await fetch('/api/marketplace'+(isPost?'':'?op='+encodeURIComponent(op)),{
+  const response=await fetch('/api/marketplace'+(isPost?'':'?op='+op.split('&').map((x,i)=>i===0?encodeURIComponent(x):x).join('&')),{
     method:isPost?'POST':'GET',credentials:'same-origin',
     headers:{'content-type':'application/json'},
     ...(isPost?{body:JSON.stringify({op,...data})}:{})
