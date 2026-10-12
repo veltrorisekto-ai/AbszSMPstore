@@ -46,3 +46,14 @@ export async function getSellerQR(sellerId){
  const [r]=await query("SELECT seller_id,status,recipient_name,qr_image_url,submitted_at,verified_at FROM market_seller_qr WHERE seller_id=$1",[sellerId]);
  return r||null;
 }
+
+export async function resetQR(sellerId,owner,reason){
+ const explanation=String(reason||'').trim().slice(0,500);
+ if(explanation.length<20)throw bad('Provide an audit reason of at least 20 characters before resetting seller QR');
+ const [active]=await query("SELECT count(*)::int n FROM market_orders WHERE seller_id=$1 AND currency='MYR' AND status IN ('AWAITING_MIDMAN','PENDING_SELLER','IN_PROGRESS','DELIVERED')",[sellerId]);
+ if(active.n>0)throw bad('Resolve open RM orders before resetting the seller QR',409);
+ const result=await query("DELETE FROM market_seller_qr WHERE seller_id=$1 RETURNING recipient_name,status",[sellerId]);
+ if(!result.length)throw bad('Seller has no QR to reset',404);
+ await audit('ADMIN',String(owner),'MARKET_SELLER_QR_RESET',{seller_id:String(sellerId),prior_status:result[0].status,reason:explanation});
+ return {reset:true};
+}
