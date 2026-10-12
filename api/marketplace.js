@@ -4,6 +4,8 @@ import { sql, send, fail, readBody, qs, requireAdmin, audit } from './_lib.js';
 import { waitUntil } from '@vercel/functions';
 import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
 import { issueLinkCode } from './_market-link.js';
+import { ensureIdentitySchema,identityState,requireTripleVerified } from './_market-identity.js';
+import { beginWhatsApp,confirmWhatsApp } from './_market-whatsapp.js';
 import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
 // Player marketplace is deliberately isolated from the official store order/bridge tables.
@@ -37,6 +39,7 @@ async function schema(){
     await query("CREATE TABLE IF NOT EXISTS market_reviews (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, order_id BIGINT NOT NULL UNIQUE REFERENCES market_orders(id), seller_id BIGINT NOT NULL REFERENCES market_players(id), buyer_id BIGINT NOT NULL REFERENCES market_players(id), stars INT NOT NULL CHECK(stars BETWEEN 1 AND 5), comment VARCHAR(700) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())");
     await query("CREATE INDEX IF NOT EXISTS market_reviews_seller ON market_reviews(seller_id,created_at DESC)");
     await ensureTrustSchema();
+    await ensureIdentitySchema();
     await query("CREATE UNIQUE INDEX IF NOT EXISTS market_verified_discord_identity ON market_players(discord_id) WHERE is_verified=true");
   })().catch(e=>{schemaPromise=null;throw e;});
   return schemaPromise;
@@ -59,7 +62,8 @@ async function account(req,optional=false){
   if(!user||user.is_banned||Number(user.session_version)!==Number(payload.sv))throw bad('Session expired or account suspended',401);
   return user;
 }
-function brief(user){return {id:user.id,username:user.username,discord_id:user.discord_id,discord_name:user.discord_name,is_verified:user.is_verified,discord_linked:Boolean(user.discord_verified_at),minecraft_linked:Boolean(user.minecraft_verified_at&&user.minecraft_uuid),created_at:user.created_at};}
+function brief(user){return {id:user.id,username:user.username,discord_id:user.discord_id,discord_name:user.discord_name,is_verified:user.is_verified,discord_linked:Boolean(user.discord_verified_at),created_at:user.created_at};}
+async function accountOverview(user){return {...brief(user),...await identityState(user.id)};}
 function sameOrigin(req){
   const host=req.headers.host||'';
   const origin=req.headers.origin;
@@ -109,7 +113,7 @@ export default async function handler(req,res){
         query("SELECT id,title,server,category,stock,currency,unit_price,status,created_at FROM market_listings WHERE seller_id=$1 AND status<>'REMOVED' ORDER BY created_at DESC LIMIT 100",[user.id]),
         query("SELECT o.id,o.listing_id,o.quantity,o.unit_price,o.currency,o.method,o.status,o.created_at,o.updated_at,o.buyer_id,o.seller_id,o.verification_status,o.verification_source,o.verified_at,o.reputation_eligible,o.risk_note,l.title,l.server,s.username AS seller_name,s.discord_id AS seller_discord_id,s.discord_name AS seller_discord_name,b.username AS buyer_name,b.discord_id AS buyer_discord_id,r.id AS review_id FROM market_orders o JOIN market_listings l ON l.id=o.listing_id JOIN market_players s ON s.id=o.seller_id JOIN market_players b ON b.id=o.buyer_id LEFT JOIN market_reviews r ON r.order_id=o.id WHERE (o.buyer_id=$1 OR o.seller_id=$1) ORDER BY o.created_at DESC LIMIT 100",[user.id])
       ]);
-      return send(res,200,{ok:true,user:brief(user),listings,orders});
+      return send(res,200,{ok:true,user:await accountOverview(user),listings,orders});
     }
     if(op==='stats')return send(res,200,{ok:true,stats:await dashboardCounts(query)});
     if(op==='listing'){
@@ -140,14 +144,14 @@ export default async function handler(req,res){
   if(op==='register'){
     const username=clean(body.username,32),discordId=clean(body.discord_id,24),discordName=clean(body.discord_name,64),password=String(body.password||'');
     if(!USERNAME.test(username)||!DISCORD_ID.test(discordId)||discordName.length<2||password.length<12||password.length>128)throw bad('Enter a 3–32 character Minecraft username, valid Discord user ID, Discord name and password of at least 12 characters');
-    const [discordUsed]=await query("SELECT id FROM market_players WHERE discord_id=$1 LIMIT 1",[discordId]);
-    if(discordUsed)throw bad('Discord ID already claimed by another marketplace account. Contact staff for account recovery.',409);
+    // Unverified self-declared Discord IDs must not block the real owner from registering.
+    // Unique link is enforced only when the bot proves ownership.
     const passwordHash=await bcrypt.hash(password,12);
     let created;
     try{[created]=await query("INSERT INTO market_players(username,password_hash,discord_id,discord_name) VALUES($1,$2,$3,$4) RETURNING id,username,discord_id,discord_name,is_verified,session_version,created_at",[username,passwordHash,discordId,discordName]);}
     catch(e){if(e.code==='23505'||String(e.message).includes('unique'))throw bad('Minecraft username is already registered',409);throw e;}
     res.setHeader('set-cookie',cookie(tokenFor(created)));
-    return send(res,201,{ok:true,user:brief(created)});
+    return send(res,201,{ok:true,user:await accountOverview(created)});
   }
   if(op==='login'){
     const username=clean(body.username,32),password=String(body.password||'');
@@ -160,7 +164,7 @@ export default async function handler(req,res){
     }
     await query('UPDATE market_players SET failed_logins=0,locked_until=NULL WHERE id=$1',[user.id]);
     res.setHeader('set-cookie',cookie(tokenFor(user)));
-    return send(res,200,{ok:true,user:brief(user)});
+    return send(res,200,{ok:true,user:await accountOverview(user)});
   }
   if(op==='logout'){
     res.setHeader('set-cookie',cookie('',0));return send(res,200,{ok:true});
@@ -217,12 +221,24 @@ export default async function handler(req,res){
     throw bad('Unknown admin action');
   }
   const user=await account(req);
+  if(op==='whatsapp_start'){
+    const result=await beginWhatsApp(user.id,body.phone);
+    return send(res,200,{ok:true,...result});
+  }
+  if(op==='whatsapp_check'){
+    const result=await confirmWhatsApp(user.id,body.code);
+    return send(res,200,{ok:true,...result});
+  }
+  if(op==='identity'){
+    return send(res,200,{ok:true,identity:await identityState(user.id)});
+  }
   if(op==='link_code'){
     const purpose=String(body.purpose||'').toUpperCase();
     const challenge=await issueLinkCode(user.id,purpose);
     return send(res,201,{ok:true,...challenge});
   }
   if(op==='create_listing'){
+    await requireTripleVerified(user.id);
     const title=clean(body.title,100),description=clean(body.description,1600),server=clean(body.server,40),category=clean(body.category,40),currency=clean(body.currency,8),price=Number(body.unit_price),stock=Number(body.stock),image=clean(body.image_url,500);
     if(title.length<5||description.length<15||!VALID_SERVERS.includes(server)||!VALID_CATEGORIES.includes(category)||!VALID_CURRENCIES.includes(currency)||!Number.isSafeInteger(price)||price<1||price>100000000||!Number.isSafeInteger(stock)||stock<1||stock>100000)throw bad('Check title, description, server, category, price and stock');
     if(image&&(!/^https:\/\/[^\s"<>]+$/i.test(image)||image.includes('@')))throw bad('Use a public HTTPS image URL or leave it blank');
@@ -233,6 +249,7 @@ export default async function handler(req,res){
     return send(res,201,{ok:true,listing});
   }
   if(op==='listing_update'){
+    await requireTripleVerified(user.id);
     const id=validID(body.id),stock=Number(body.stock),price=Number(body.unit_price);
     if(!id||!Number.isSafeInteger(stock)||stock<0||stock>100000||!Number.isSafeInteger(price)||price<1||price>100000000)throw bad('Invalid listing quantity or coin price');
     const rows=await query("WITH before AS MATERIALIZED (SELECT id,unit_price,stock FROM market_listings WHERE id=$1 AND seller_id=$2 AND status IN ('ACTIVE','PAUSED') FOR UPDATE), changed AS (UPDATE market_listings l SET unit_price=$3,stock=$4,status=CASE WHEN $4=0 THEN 'PAUSED' ELSE l.status END,updated_at=now() FROM before b WHERE l.id=b.id RETURNING l.id,l.title,l.server,l.currency,l.status,l.unit_price,l.stock,b.unit_price AS previous_price,b.stock AS previous_stock) SELECT * FROM changed",[id,user.id,price,stock]);
@@ -245,6 +262,7 @@ export default async function handler(req,res){
     return send(res,200,{ok:true,listing});
   }
   if(op==='listing_status'){
+    await requireTripleVerified(user.id);
     const id=validID(body.id);if(!id)throw bad('Invalid listing');
     const next=body.status==='PAUSED'?'PAUSED':body.status==='ACTIVE'?'ACTIVE':null;
     if(!next)throw bad('Invalid listing status');
@@ -253,8 +271,12 @@ export default async function handler(req,res){
     return send(res,200,{ok:true});
   }
   if(op==='buy'){
+    await requireTripleVerified(user.id);
     const id=validID(body.listing_id),quantity=Number(body.quantity),method=body.method;
     if(!id||!Number.isSafeInteger(quantity)||quantity<1||quantity>64||!['MIDMAN','DISCORD'].includes(method))throw bad('Invalid purchase request');
+    const [sellerForIdentity]=await query("SELECT seller_id FROM market_listings WHERE id=$1",[id]);
+    if(!sellerForIdentity)throw bad('Listing not available',404);
+    await requireTripleVerified(sellerForIdentity.seller_id);
     const initial=method==='MIDMAN'?'AWAITING_MIDMAN':'PENDING_SELLER';
     const [limit]=await query("SELECT count(*)::int AS count FROM market_orders WHERE buyer_id=$1 AND status IN ('AWAITING_MIDMAN','PENDING_SELLER','IN_PROGRESS','DELIVERED')",[user.id]);
     if(limit.count>=10)throw bad('Too many unfinished orders; resolve existing trades before purchasing again',429);
@@ -271,6 +293,10 @@ export default async function handler(req,res){
   const id=validID(body.id);if(!id)throw bad('Invalid order ID');
   const order=await getOrder(id,user);
   const buyer=String(order.buyer_id)===String(user.id),seller=String(order.seller_id)===String(user.id);
+  // Existing orders remain readable and cancellable if an account loses verification.
+  if(['accept','delivered','received','review'].includes(op)){
+    await requireTripleVerified(user.id);
+  }
   if(op==='accept'){
     if(!seller||order.status!=='PENDING_SELLER')throw bad('Only the seller can accept a pending direct trade',409);
     await query("UPDATE market_orders SET status='IN_PROGRESS',updated_at=now() WHERE id=$1 AND status='PENDING_SELLER'",[id]);
