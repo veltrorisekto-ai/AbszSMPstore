@@ -4,17 +4,17 @@ const WEB='https://abszrpg.shop/marketplace/';
 const INFO={
  marketplace:{
   title:'🛒 Welcome to AbszRPG Player Marketplace',
-  description:'Browse real player listings, compare sellers, or list your own Minecraft items.\n\n**Marketplace Coins:** proposed top-up purchase price is **RM1 per 1 Coin**. **Trading service fee: 0% during launch.**\n⚠️ The coin top-up/wallet checkout is **not yet enabled**. Do not pay a QR code for marketplace coins until the website has an approved top-up order and owner confirmation.\n\nThe current site supports listing, direct Discord contact, staff-supervised requests and order tracking. Item delivery is not automatic.',
+  description:'Browse real player listings, compare sellers, or list your own Minecraft items.\n\n**Launch trading service fee: 0%.** RM listings use the approved seller QR: buyers pay sellers directly only after the order is active. The seller confirms incoming money through their own bank/e-wallet account.\n\n**To buy or sell, verify all three:** Discord via the existing bot, WhatsApp through a real OTP and Minecraft via verified Bedrock XUID or Java UUID. A player with Bedrock linked may add Java; linked accounts cannot be changed by players.\n\nNo website escrow, automatic item delivery, wallet top-up or cash-out. Never trust a screenshot as proof of payment.',
   action:'Browse or Sell Items'
  },
  deals:{
   title:'🏷️ Marketplace Deals & Restocks',
-  description:'Price drops, restocks and special announcements from active player listings appear here when they occur. No fake discounts or fabricated sale counts.\n\n**Launch service fee: 0%.** For proposed Marketplace Coin top-ups, **1 Coin costs RM1** when the wallet system becomes available. This is a purchase price, not a cash-redemption guarantee.',
+  description:'Price drops, restocks and special announcements from active player listings appear here when they occur. No fake discounts or fabricated sale counts.\n\n**Launch service fee: 0%.** Buyers of eligible RM listings pay sellers directly through approved QR codes. Marketplace service fee is **0%** at launch. In-game coins cannot be redeemed as RM.',
   action:'Browse Current Listings'
  },
  verified:{
   title:'✅ Only Independently Verified Trades Appear Here',
-  description:'This channel will announce transactions only after real staff evidence review or authenticated Minecraft server transfer evidence.\n\n**Order Received ≠ Verified Trade.** Buyer and seller clicks alone cannot increase seller trust scores.\n\nVerified seller rankings also require linked identities and anti-abuse checks. There are no sample/fake completed trades.',
+  description:'This channel will announce transactions only after real staff evidence review or authenticated Minecraft server transfer evidence.\n\n**Order Received ≠ Verified Trade.** Buyer and seller clicks alone cannot increase seller trust scores.\n\nVerified seller rankings require real Discord + WhatsApp OTP + Minecraft account links, evidence and anti-abuse checks. There are no sample/fake completed trades.',
   action:'Learn About Trade Safety'
  },
  reviews:{
@@ -24,7 +24,7 @@ const INFO={
  },
  middleman:{
   title:'🛡️ Official Middleman Service',
-  description:'Request a staff-supervised order through the website. Authorized moderators may open a private ticket for your order; always independently verify who the moderator is.\n\n⚠️ This is **not financial escrow**. Do not transfer items, coins or money based on a screenshot or self-declared Discord identity.\n\nNo marketplace trading service fee at launch (**0%**).',
+  description:'Request a staff-supervised order through the website. Authorized moderators may open a private ticket for your order; always independently verify who the moderator is.\n\n⚠️ Middleman staff coordinate a trade and private ticket, but this is **not cash custody or escrow**. Approved RM QR payments still go directly to the seller; confirm the bank recipient carefully. Do not pay based on screenshots.\n\nNo marketplace trading service fee at launch (**0%**).',
   action:'Request Middleman on Website'
  },
  security:{
