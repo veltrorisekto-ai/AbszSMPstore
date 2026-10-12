@@ -1,4 +1,4 @@
-import { getSetting, setSetting, discordRequest } from './_lib.js';
+import { getSetting, setSetting, discordRequest, discordConfig } from './_lib.js';
 const WEB='https://abszrpg.shop/marketplace/';
 export const USER_CHANNEL_IDS=Object.freeze({
   marketplace:'1559255601857433682',
@@ -29,10 +29,23 @@ export async function marketChannelConfig(){
 }
 export async function isStaffPrivateChannel(channelId){
   if(!valid(channelId))return false;
-  const data=await discordRequest('/channels/'+channelId);
-  const everyone=(data.permission_overwrites||[]).find(p=>String(p.id)===String(data.guild_id));
-  const denial=BigInt(everyone?.deny||'0');
-  return data.type===0&&(denial & 1024n)===1024n;
+  const [data,config,bot]=await Promise.all([
+    discordRequest('/channels/'+channelId),
+    discordConfig(),
+    discordRequest('/users/@me')
+  ]);
+  const overwrites=data.permission_overwrites||[];
+  const everyone=overwrites.find(p=>String(p.id)===String(data.guild_id));
+  const denied=(BigInt(everyone?.deny||'0')&1024n)===1024n;
+  if(data.type!==0||!denied)return false;
+  // Any non-staff role or unapproved user allowed to view is a privacy failure.
+  for(const permission of overwrites){
+    if((BigInt(permission.allow||'0')&1024n)!==1024n)continue;
+    if(String(permission.id)===String(data.guild_id))return false;
+    if(permission.type===0&&!config.allowedRoles.includes(String(permission.id)))return false;
+    if(permission.type===1&&String(permission.id)!==String(bot.id)&&!config.allowedUsers.includes(String(permission.id)))return false;
+  }
+  return true;
 }
 export async function sendMarketEvent(kind,payload={}){
   const cfg=await marketChannelConfig(),channelId=cfg.channels[kind];
