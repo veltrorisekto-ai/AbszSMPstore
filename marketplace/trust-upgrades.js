@@ -102,9 +102,27 @@ async function sellerQRSetup(){
  if(qr){open('Your Seller QR','<div class="notice">Status: '+esc(qr.status)+' · Locked recipient: '+esc(qr.recipient_name)+'. QR changes require owner review.</div><img src="'+esc(qr.qr_image_url)+'" alt="Your Seller QR" style="max-width:260px;width:100%">');return}
  open('Register Seller QR (Owner Review)','<p>QR must receive direct payment in the seller’s own bank/e-wallet account. No middleman holds funds in this flow.</p>'
   +'<form id="qrForm"><div class="field"><label>Actual Bank / Wallet Recipient Name</label><input name="recipient_name" maxlength="120" minlength="4" required></div>'
-  +'<div class="field"><label>Public HTTPS QR image URL</label><input name="qr_image_url" type="url" placeholder="https://..." required></div>'
+  +'<div class="field"><label>Upload your own QR (PNG, JPG or WebP, under 100KB)</label><input name="qr_file" type="file" accept="image/png,image/jpeg,image/webp"></div>'
+  +'<div class="field"><label>OR paste a public HTTPS image URL</label><input name="qr_image_url" type="url" placeholder="https://..."></div>'
   +'<button class="btn green">Submit for Approval</button></form>');
- $('qrForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);try{await call('seller_qr_submit',{recipient_name:f.get('recipient_name'),qr_image_url:f.get('qr_image_url')});toast('QR submitted for owner approval');myTrades()}catch(err){toast(err.message)}};
+ $('qrForm').onsubmit=async e=>{
+  e.preventDefault();const f=new FormData(e.currentTarget),file=f.get('qr_file');
+  try{
+   let qr_image_url=String(f.get('qr_image_url')||'').trim();
+   if(file&&file.size){
+    if(file.size>100000)throw Error('Use an image smaller than 100KB');
+    qr_image_url=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result));
+      reader.onerror=()=>reject(new Error('QR file cannot be read'));
+      reader.readAsDataURL(file);
+    });
+   }
+   if(!qr_image_url)throw Error('Upload a QR picture or enter a public HTTPS image URL');
+   await call('seller_qr_submit',{recipient_name:f.get('recipient_name'),qr_image_url});
+   toast('QR submitted for owner approval');myTrades();
+  }catch(err){toast(err.message)}
+ };
 }
 async function sellerEditListing(id){
  if(!mustLogin())return;
