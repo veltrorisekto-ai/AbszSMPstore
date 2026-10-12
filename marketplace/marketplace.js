@@ -83,7 +83,7 @@ function accountModal(register=false){
   try{
    const payload={username:f.get('username'),password:f.get('password')};
    if(register){payload.discord_id=f.get('discord_id');payload.discord_name=f.get('discord_name')}
-   await call(register?'register':'login',payload);await getSession();close();toast('Signed in as '+me.username);if(lastView==='mine')myTrades();
+   await call(register?'register':'login',payload);await getSession();close();toast('Signed in as '+me.username);if(register||!me.ready||lastView==='mine')myTrades();
   }catch(e){toast(e.message)}finally{btn.disabled=false}
  };
 }
