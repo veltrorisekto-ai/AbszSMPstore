@@ -39,14 +39,14 @@ function bindFilters(){
 function listingArt(item){const icons={'Weapons':'⚔️','Armor':'🛡️','Tools':'⛏️','Blocks':'🧱','Materials':'💎','Rare Items':'👑','Pets':'🐾','Other':'📦'};
  return item.image_url?'<img src="'+esc(item.image_url)+'" loading="lazy" alt="'+esc(item.title)+'">':'<span role="img" aria-label="'+esc(item.category)+'">'+(icons[item.category]||'💎')+'</span>';
 }
-function trusted(s){return s.is_verified?'<span class="tag verified">✓ Staff-checked</span>':'<span class="tag warn">Unverified ID</span>'}
+function trusted(s){return (s.triple_verified?'<span class="tag verified">✓ Discord + WhatsApp + Minecraft</span>':'<span class="tag warn">Triple verification pending</span>')+(s.is_verified?' <span class="tag verified">✓ Staff-checked</span>':'')}
 function card(item){
  return '<article class="listing-card"><div class="item-art">'+listingArt(item)+'</div><div class="listing-body">'
   +'<div class="tagline"><span class="tag">'+esc(item.server)+'</span><span class="tag">'+esc(item.category)+'</span></div>'
   +'<h3>'+esc(item.title)+'</h3><p class="excerpt">'+esc(item.description.length>140?item.description.slice(0,140)+'…':item.description)+'</p>'
   +'<div><button class="seller-link" data-seller="'+esc(item.seller_id)+'">By '+esc(item.seller_name)+' ↗</button> '+trusted(item)+'</div>'
   +'<div class="mini-muted"><span class="stars">★ '+(Number(item.review_count)>0?Number(item.rating).toFixed(1):'New')+'</span> · '+Number(item.completed)+' completed trades · '+item.stock+' available</div>'
-  +'<div class="card-bottom"><div><div class="price">'+money(item.unit_price,item.currency)+'</div><small class="mini-muted">per item</small></div><button class="btn gold small" data-buy="'+esc(item.id)+'">Buy Item →</button></div></div></article>';
+  +'<div class="card-bottom"><div><div class="price">'+money(item.unit_price,item.currency)+'</div><small class="mini-muted">per item</small></div>'+(item.triple_verified?'<button class="btn gold small" data-buy="'+esc(item.id)+'">Buy Item →</button>':'<button class="btn outline small" type="button" disabled>Seller Not Verified</button>')+'</div></div></article>';
 }
 async function refreshListings(){
  if(busy)return;busy=true;
@@ -98,6 +98,7 @@ $('search').addEventListener('input',()=>delay(refreshListings));
 for(const id of ['serverFilter','categoryFilter','sortFilter'])$(id).addEventListener('change',refreshListings);
 function newListing(){
  if(!mustLogin())return;
+ if(!me.ready){toast('Verify Discord, WhatsApp OTP and Minecraft first');myTrades();return;}
  open('List an Item for Sale','<p class="muted">Your listing will become visible to buyers immediately. Only offer items you actually own and can deliver. No real-money transfer is handled by this website.</p>'
  +'<form id="listingForm">'
  +'<div class="field"><label>ITEM NAME</label><input name="title" required minlength="5" maxlength="100" placeholder="e.g. Enchanted Netherite Sword"></div>'
@@ -131,8 +132,10 @@ function selectMethod(method){
 }
 function buy(id){
  if(!mustLogin())return;
+ if(!me.ready){toast('Verify Discord, WhatsApp OTP and Minecraft first');myTrades();return;}
  const item=liveListings.find(v=>String(v.id)===String(id));
  if(!item){toast('Refresh and try again');return}
+ if(!item.triple_verified){toast('Seller has not completed all 3 verifications');return}
  if(String(item.seller_id)===String(me.id)){toast('You cannot purchase your own listing');return}
  chosenListing=item;chosenMethod='MIDMAN';
  open('Purchase: '+item.title,'<div class="trade-summary"><b>'+esc(item.server)+' · '+esc(item.category)+'</b><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p>'
