@@ -1,6 +1,6 @@
 import config from '../join/servers.json' with { type: 'json' };
 
-export const JOIN_SITE = 'https://abszsmp.online/join/';
+export const JOIN_SITE = 'https://abszrpg.shop/join/';
 
 export function makePanel({ interactive = false } = {}) {
   const children = [
@@ -50,7 +50,7 @@ export function joinReply(customId) {
   const server = match && config.servers.find(s => s.id === match[1]);
   const edition = match?.[2];
   const endpoint = server?.[edition];
-  if (!endpoint) return { type: 4, data: { flags: 64, allowed_mentions: { parse: [] }, content: 'This server option is unavailable. Open https://abszsmp.online/join/ for the current list.' } };
+  if (!endpoint) return { type: 4, data: { flags: 64, allowed_mentions: { parse: [] }, content: `This server option is unavailable. Open ${JOIN_SITE} for the current list.` } };
   const query = new URLSearchParams({ server: server.id, edition, autojoin: '1' });
   return { type: 4, data: {
     flags: 64, allowed_mentions: { parse: [] },

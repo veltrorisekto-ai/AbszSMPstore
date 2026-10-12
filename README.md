@@ -39,12 +39,12 @@ AbszStoreBridge must send the one-time bridge key as a Bearer token, heartbeat r
 
 ## Minecraft server selector and Discord join panel
 
-- Public selector: https://abszsmp.online/join/
-- Owner posting screen: https://abszsmp.online/join/discord.html (also linked in owner navigation)
+- Public selector: https://abszrpg.shop/join/
+- Owner posting screen: https://abszrpg.shop/join/discord.html (also linked in owner navigation)
 - Server addresses: `join/servers.json`; carried over from the supplied join-panel package. Minecraft server connectivity is not validated by a website deployment.
 - Sign in at `/admin/login`, then use the posting screen with a channel webhook or the existing `DISCORD_BOT_TOKEN` and a channel ID. Webhook URLs are used for one request and never persisted.
 - All posts require an owner session and a same-origin JSON request. Bot panels use green buttons; clicking shows a private response containing only the HTTPS join-link button, without descriptive text. New private join replies are deleted five seconds after being sent, using a Vercel background task and Discord's original-interaction-response endpoint. Webhook panels use Discord's gray direct-link buttons. The panel accent and website join buttons are green. Both use Components V2 and suppress mentions. The bot token never reaches the browser.
 - Use the returned message ID to update an existing panel with the same bot or webhook. Pin the message in Discord. The website does not post automatically during deployment.
 - Bedrock attempts the built-in Minecraft URI handler with manual copy fallbacks. Java copies its address for Multiplayer → Direct Connection.
 
-Join button requests require a valid Ed25519 signature and are handled before payment approval authorization, so ordinary members can use them. The bot application interaction endpoint is `https://abszsmp.online/api/discord`.
+Join button requests require a valid Ed25519 signature and are handled before payment approval authorization, so ordinary members can use them. The bot application interaction endpoint is `https://abszrpg.shop/api/discord`.
