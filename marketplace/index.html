@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#091321">
+  <meta name="description" content="AbszRPG Player Marketplace: browse player listings, request staff-supervised trades, contact sellers, follow orders and review completed deals.">
+  <title>Player Marketplace | AbszoluteCraft</title>
+  <link rel="icon" href="/assets/abszolutecraft-logo.webp">
+  <link rel="stylesheet" href="/marketplace/marketplace.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to marketplace</a>
+  <header class="site-header">
+    <a class="identity" href="/" aria-label="AbszoluteCraft home"><img src="/assets/abszolutecraft-logo.webp" alt=""><span>ABSZOLUTECRAFT<small>PLAYER MARKETPLACE</small></span></a>
+    <nav aria-label="Main navigation"><a href="/">Home</a><a href="/store">Official Store</a><a href="/join/">Servers</a><a class="on" href="/marketplace/">Marketplace</a></nav>
+    <button type="button" class="btn outline small" id="accountButton">Sign In</button>
+  </header>
+  <main id="main">
+    <section class="banner">
+      <div class="hero-content"><p class="eyebrow">THE PLAYER-TO-PLAYER EXCHANGE</p><h1>Trade your loot.<br><em>Build your legend.</em></h1>
+        <p>Discover treasures from fellow players across AbszoluteCraft worlds. Buy, sell and track trades — with seller profiles, verified-purchase reviews and an optional staff-supervised route.</p>
+        <div class="hero-actions"><button class="btn gold" id="browseButton">Explore Listings ↓</button><button class="btn green" id="sellButton">＋ Sell an Item</button></div>
+        <p class="hero-note">Independent player listings · No automatic escrow or item delivery</p>
+      </div>
+    </section>
+    <section class="trust-row wrapper" aria-label="Marketplace protections">
+      <div><span>🛡</span><b>Staff-supervised option</b><small>Request a midman before exchanging anything</small></div>
+      <div><span>★</span><b>Purchase-based reviews</b><small>Reviews require a completed order</small></div>
+      <div><span>♜</span><b>Seller profiles</b><small>Check completed trades and staff verification</small></div>
+    </section>
+    <section class="wrapper market-layout" id="browse">
+      <div class="section-top"><div><p class="eyebrow">FIND YOUR NEXT TREASURE</p><h2>Player Listings</h2></div><button class="btn outline" id="myTradesButton">My Listings & Orders</button></div>
+      <div class="toolbar">
+        <label class="search"><span>⌕</span><input id="search" type="search" maxlength="80" placeholder="Search weapons, armor, blocks, materials…"></label>
+        <label><span class="sr">Server</span><select id="serverFilter"><option value="">All servers</option></select></label>
+        <label><span class="sr">Category</span><select id="categoryFilter"><option value="">All categories</option></select></label>
+        <label><span class="sr">Sort listings</span><select id="sortFilter"><option value="recent">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="trusted">Most completed trades</option></select></label>
+      </div>
+      <div class="listing-count" id="listingCount" role="status">Loading marketplace…</div>
+      <div class="items" id="listings"></div>
+    </section>
+    <section class="wrapper rules-section" id="rules">
+      <div><p class="eyebrow">TRADE SMART, TRADE SAFER</p><h2>Marketplace Safety Rules</h2><p class="muted">This site tracks orders, not actual Minecraft inventory or payments. Player usernames and Discord IDs are self-reported unless staff explicitly verifies them. A high rating does not guarantee a risk-free trade.</p></div>
+      <ol class="rule-grid">
+        <li><b>Verify the server and item.</b><p>Confirm the edition, exact quantity, condition and agreed price before you make a trade.</p></li>
+        <li><b>Use only official staff for midman trades.</b><p>Wait for approval and independently confirm the staff member inside the official Discord server. No impersonators.</p></li>
+        <li><b>No early payment or delivery.</b><p>Never send money or valuables based on a screenshot, unverified message, or claim that escrow has been funded.</p></li>
+        <li><b>Protect your account.</b><p>Never reveal Minecraft passwords, one-time codes, Discord recovery codes, or account access.</p></li>
+        <li><b>Keep evidence and report disputes.</b><p>Save trade details, order ID, and Discord messages. Use Dispute if a live order has a problem.</p></li>
+        <li><b>Review after successful receipt.</b><p>Only the buyer can press Order Received after the seller confirms delivery. Honest reviews cannot be bought or traded.</p></li>
+      </ol>
+      <div class="notice">Player-to-player sales must comply with AbszoluteCraft server rules, Minecraft/Mojang usage policies, and applicable laws. Staff-supervised means staff coordination, not a payment guarantee or automatic escrow. Off-site Discord payments and trades remain the responsibility of participants.</div>
+    </section>
+    <section class="wrapper footcta"><div><p class="eyebrow">YOUR JOURNEY CONTINUES</p><h2>One community. Countless discoveries.</h2></div><a href="/join/" class="btn outline">Choose a Server ↗</a></section>
+  </main>
+  <footer><span>© AbszoluteCraft · Player Marketplace</span><div><a href="/">Home</a><a href="/store">Official Store</a><a href="#rules">Safety Rules</a><a href="/admin/login">Owner Login</a><button type="button" id="moderateLink" class="linklike">Owner Moderation</button></div><small>Not affiliated with Mojang or Microsoft.</small></footer>
+  <dialog id="modal"><div class="dialog-head"><h2 id="modalTitle">Marketplace</h2><button type="button" class="icon-button" id="closeModal" aria-label="Close dialog">×</button></div><div id="modalBody"></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/marketplace/marketplace.js" defer></script>
+</body>
+</html>
