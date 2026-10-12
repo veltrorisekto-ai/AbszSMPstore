@@ -168,6 +168,16 @@ async function existingBotChannels(){
   }catch(e){toast(e.message)}
  };
 }
+async function staffResetSellerQR(sellerId){
+ const reason=prompt('Owner audit: why are you resetting this seller QR? (20+ characters)');
+ if(reason===null)return;
+ if(reason.trim().length<20)return toast('Please explain why the QR must be reset (at least 20 characters)');
+ try{
+  await call('admin_qr_reset',{id:sellerId,reason});
+  toast('Seller QR reset. Their next submission requires owner approval.');
+  ownerModeration();
+ }catch(e){toast(e.message)}
+}
 async function staffTicket(orderId,action){
  if(action==='ticket_close'&&!confirm('Archive this middleman ticket for staff-only access?'))return;
  try{
@@ -227,6 +237,11 @@ ownerModeration=async function(){
     +'<button class="btn green small" data-admin="admin_qr_approve" data-id="'+q.seller_id+'">Approve Seller QR</button> '
     +'<button class="btn danger small" data-admin="admin_qr_reject" data-id="'+q.seller_id+'">Reject</button></div>').join(''));
  }
+ if(data.qr_profiles?.length){
+  body.insertAdjacentHTML('beforeend','<hr class="divider"><h3>Registered Seller QR Accounts</h3>'
+   +data.qr_profiles.map(q=>'<div class="my-listing"><strong>'+esc(q.seller_name)+'</strong> · '+esc(q.status)+' · Recipient: '+esc(q.recipient_name)
+    +'<p class="muted">QR resets require an audit reason. Outstanding RM orders must be resolved first.</p><button class="btn outline small" data-qr-reset="'+q.seller_id+'">Owner Reset QR</button></div>').join(''));
+ }
  if(data.verified?.length){
   const section='<hr class="divider"><h3>Auditable Verified Credits</h3>'
    +data.verified.map(o=>'<div class="my-listing"><b>Order #'+o.id+' · '+esc(o.title)+'</b><p>Evidence: '+esc(o.verification_source)+' · '+esc(o.verification_reference)+' · '+(o.reputation_eligible?'Rank eligible':'Not ranked')+'</p><button class="btn danger small" data-market-revoke="'+o.id+'">Revoke Evidence</button></div>').join('');
@@ -234,13 +249,14 @@ ownerModeration=async function(){
  }
 };
 document.addEventListener('click',event=>{
- const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive],[data-market-edit]');
+ const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive],[data-market-edit],[data-qr-reset]');
  if(!el)return;
  if(el.dataset.marketProof)return ownerVerifyOrder(el.dataset.marketProof);
  if(el.dataset.marketRevoke)return ownerRevokeOrder(el.dataset.marketRevoke);
  if(el.dataset.marketTicket)return staffTicket(el.dataset.marketTicket,'ticket_open');
  if(el.dataset.marketArchive)return staffTicket(el.dataset.marketArchive,'ticket_close');
  if(el.dataset.marketEdit)return sellerEditListing(el.dataset.marketEdit);
+ if(el.dataset.qrReset)return staffResetSellerQR(el.dataset.qrReset);
 });
 (async()=>{
  const p=new URLSearchParams(location.search);
