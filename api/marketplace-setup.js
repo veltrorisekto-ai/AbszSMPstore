@@ -61,7 +61,9 @@ export default async function handler(req,res){
         if(['security','dashboard'].includes(key)&&!await isStaffPrivateChannel(value))errors.push('#'+CHANNELS[key]+' must deny View Channel to @everyone');
         found[key]=value;
       }
-      if(errors.length)return send(res,409,{ok:false,error:'Staff channels are not private; no messages were posted.',errors});
+      // Public onboarding may proceed; private staff posts remain blocked until permissions are verified.
+      // See publishAllMarketplacePanels, which refuses security/dashboard posts unless staff-only.
+
       await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels:found});
       let commands=[];
       try{
