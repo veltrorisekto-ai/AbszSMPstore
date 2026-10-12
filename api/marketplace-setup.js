@@ -9,6 +9,19 @@ function origin(req){
   if(req.headers['sec-fetch-site']==='cross-site')throw error('Cross-site request denied',403);
 }
 const botRequest=(path,init={})=>discordRequest(path,init);
+async function installCommands(guildId,botId){
+  const commands=[
+    {name:'marketlink',description:'Link your Discord account to AbszRPG Marketplace',type:1,
+      options:[{type:3,name:'code',description:'One-time code from My Listings & Orders on the website',required:true,min_length:24,max_length:60}]},
+    {name:'marketstats',description:'View verified AbszRPG Marketplace statistics',type:1}
+  ];
+  const results=[];
+  for(const command of commands){
+    const response=await botRequest('/applications/'+botId+'/guilds/'+guildId+'/commands',{method:'POST',body:JSON.stringify(command)});
+    results.push({name:response.name,id:response.id});
+  }
+  return results;
+}
 async function memberAccess(guildId){
   const [bot,roles]=await Promise.all([botRequest('/users/@me'),botRequest('/guilds/'+guildId+'/roles')]);
   if(!digits(bot.id))throw error('Bot identity not available',503);
@@ -64,6 +77,7 @@ export default async function handler(req,res){
         await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels:configured});
       }
       const warnings=[];
+      try{await installCommands(guildId,bot.id)}catch(e){warnings.push('Slash commands: '+String(e.message).slice(0,140))}
       try{await postMarketGuide()}catch(e){warnings.push('Guide post: '+String(e.message).slice(0,140))}
       try{await syncDashboard(query)}catch(e){warnings.push('Dashboard post: '+String(e.message).slice(0,140))}
       return send(res,200,{ok:true,guild_id:guildId,created,reused,warnings,channels:configured});
@@ -83,6 +97,12 @@ export default async function handler(req,res){
       }
       await setSetting('marketplace_discord',{...await getSetting('marketplace_discord'),guild_id:guildId,channels,dashboard_message_id:null,guide_message_id:null});
       return send(res,200,{ok:true,channels});
+    }
+    if(op==='register_commands'){
+      if(!current.guild_id)throw error('Configure a Discord guild first',409);
+      const bot=await botRequest('/users/@me');
+      const commands=await installCommands(current.guild_id,bot.id);
+      return send(res,200,{ok:true,commands});
     }
     if(op==='publish'){
       const guide=await postMarketGuide();
