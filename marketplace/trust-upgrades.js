@@ -57,7 +57,29 @@ myTrades=async function(){
  if(anchor){anchor.insertAdjacentHTML('beforebegin',html)}
  $('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
  $('marketMinecraftLink').onclick=()=>marketLinkCode('MINECRAFT');
+ try{
+   const data=await call('me');
+   for(const listing of data.listings){
+    const control=body.querySelector('[data-pause="'+listing.id+'"],[data-activate="'+listing.id+'"]');
+    if(control)control.insertAdjacentHTML('afterend','<button class="btn outline small" data-market-edit="'+listing.id+'">Update Stock / Price</button>');
+   }
+ }catch{}
+
 };
+async function sellerEditListing(id){
+ if(!mustLogin())return;
+ let r;try{r=await call('me')}catch(e){toast(e.message);return}
+ const item=r.listings.find(x=>String(x.id)===String(id));if(!item)return toast('Listing not found');
+ open('Update Listing','<p>'+esc(item.title)+' · '+esc(item.server)+'</p>'
+  +'<form id="listingUpdateForm"><div class="field"><label>IN-GAME COIN PRICE</label><input type="number" name="price" required min="1" max="100000000" step="1" value="'+Number(item.unit_price)+'"></div>'
+  +'<div class="field"><label>AVAILABLE STOCK (0 = PAUSE)</label><input type="number" name="stock" required min="0" max="100000" step="1" value="'+Number(item.stock)+'"></div>'
+  +'<div class="notice">Price drops and restocks can be announced in #marketplace-deals by the existing bot. Pending orders retain their original price.</div>'
+  +'<button class="btn green">Save Changes</button></form>');
+ $('listingUpdateForm').onsubmit=async event=>{
+  event.preventDefault();const f=new FormData(event.currentTarget);
+  try{await call('listing_update',{id,unit_price:Number(f.get('price')),stock:Number(f.get('stock'))});toast('Listing updated');myTrades();refreshListings()}catch(e){toast(e.message)}
+ };
+}
 async function existingBotChannels(){
  let result;
  try{
@@ -146,12 +168,13 @@ ownerModeration=async function(){
  }
 };
 document.addEventListener('click',event=>{
- const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive]');
+ const el=event.target.closest('[data-market-proof],[data-market-revoke],[data-market-ticket],[data-market-archive],[data-market-edit]');
  if(!el)return;
  if(el.dataset.marketProof)return ownerVerifyOrder(el.dataset.marketProof);
  if(el.dataset.marketRevoke)return ownerRevokeOrder(el.dataset.marketRevoke);
  if(el.dataset.marketTicket)return staffTicket(el.dataset.marketTicket,'ticket_open');
  if(el.dataset.marketArchive)return staffTicket(el.dataset.marketArchive,'ticket_close');
+ if(el.dataset.marketEdit)return sellerEditListing(el.dataset.marketEdit);
 });
 (async()=>{
  const p=new URLSearchParams(location.search);
