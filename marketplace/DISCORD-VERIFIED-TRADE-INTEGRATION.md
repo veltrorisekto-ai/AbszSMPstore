@@ -1,3 +1,5 @@
+> CURRENT POLICY: 14 October 2026 — verified Discord is the only mandatory identity check. No WhatsApp verification or paid OTP service. Optional Bedrock/Java links remain available.
+
 # AbszRPG Marketplace — Existing Discord Bot & Verified Transactions
 
 This extension uses the **same** bot configured by `DISCORD_BOT_TOKEN` and the **same** Ed25519 interaction endpoint `/api/discord`. No new bot token or new fixed channels are required. The existing join-server buttons and official-store payment approval handlers are untouched.
@@ -24,7 +26,7 @@ The bot cannot post without proper View Channel/Send Messages/Embed Links permis
 - `PENDING / IN_PROGRESS / DELIVERED`: no verified reputation.
 - `COMPLETED + UNVERIFIED`: both parties clicked that the trade finished. **+0 reputation; no trusted review.**
 - `COMPLETED + VERIFIED`: trusted server evidence or independent staff-confirmed supervision. This does not automatically mean the trade earns a reputation credit.
-- `reputation_eligible=true`: only after linked Minecraft UUIDs and Discord accounts, uniqueness checks, and repeated-trade checks. This is the only metric used for seller ranking and verified buyer ratings.
+- `reputation_eligible=true`: after the buyer and seller have verified Discord links, independent trade evidence, uniqueness checks, and repeated-trade checks. Minecraft linking is optional, not a trading prerequisite.
 
 The system records unique server proof IDs and unique staff evidence references. Buyer/seller must be different account identities. More than four additional trades by the same pair within 24 hours or repeated disputes require review; the same buyer pair earns at most one eligible credit per 24 hours. Owner can revoke a verification and its ranking credit with a recorded reason. Fraud detection cannot prevent every multi-account conspiracy.
 
@@ -32,7 +34,7 @@ The **direct Discord** method cannot obtain staff-only verification; it requires
 
 ## Discord and Minecraft linking
 
-A player visits My Listings & Orders > Link Discord to create a 10-minute single-use `/marketlink CODE` for the existing bot. The Discord user ID must match the account that generated the challenge. The `Link Minecraft` button issues a corresponding `/market link CODE`, but the Minecraft server plugin must support this bridge command before it will actually link.
+A player visits My Listings & Orders > Verify Discord to create a 10-minute single-use `/marketlink CODE` for the existing bot. The Discord user ID must match the account. This is the ONLY mandatory identity check. Optional Bedrock/Java linking uses `/market link CODE` only where the Minecraft server bridge is available.
 
 The authenticated bridge endpoint `POST /api/market-proof` uses the existing hashed Minecraft bridge credential. Its `link` operation verifies a real Minecraft UUID on the server side. Its `trade_proof` operation needs the exact order server, linked buyer/seller UUIDs, exact quantity and coin price, a unique transaction ID, an item-transfer event ID, and a currency-ledger event ID. **The endpoint is implemented; this does not imply any of the Bedrock/Java server plugins already send those events.**
 
@@ -52,4 +54,4 @@ New listings send item details, optional image and Buy/Seller buttons. Seller pr
 
 Existing official store payments, admin sessions and join features are preserved. The marketplace only alters its own tables through additive migrations. This is **not** financial escrow and does not custody real-world money, in-game items, or coins.
 
-**Before advertising this as fully verified:** test two real accounts, Discord linking, Minecraft UUID linking on every supported server, item+coin proof emission from an upgraded server plugin, owner midman review, private ticket access, dispute reversal and review deduplication. A successful Vercel deployment cannot verify the Minecraft plugin or Discord role/channel settings by itself.
+**Before advertising the Discord-only flow as fully working:** test two real accounts and the existing /marketlink slash command, seller QR approval, genuine QR payment claims and manual seller confirmation, private middleman tickets, independent evidence reviews, dispute reversal and review deduplication. Minecraft bridge item-proof tests are optional integrations, not identity prerequisites. A successful Vercel deployment cannot verify the Minecraft plugin or Discord role/channel settings by itself.
