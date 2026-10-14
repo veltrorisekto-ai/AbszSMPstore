@@ -11,22 +11,26 @@ export function checkMinecraftId(edition,identity){
   throw bad('Expected a valid Java UUID or verified Bedrock XUID with an explicit edition');
 }
 export async function ensureIdentitySchema(){
-  await q("ALTER TABLE market_players ADD COLUMN IF NOT EXISTS whatsapp_phone VARCHAR(16)");
-  await q("ALTER TABLE market_players ADD COLUMN IF NOT EXISTS whatsapp_verified_at TIMESTAMPTZ");
-  await q("CREATE UNIQUE INDEX IF NOT EXISTS market_verified_whatsapp_unique ON market_players(whatsapp_phone) WHERE whatsapp_phone IS NOT NULL");
+  // Bedrock/Java linking remains optional. Existing WhatsApp columns, if any, are left
+  // intact to preserve historical data but are never requested or used for eligibility.
   await q("CREATE TABLE IF NOT EXISTS market_minecraft_identities (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, player_id BIGINT NOT NULL REFERENCES market_players(id), edition VARCHAR(10) NOT NULL CHECK(edition IN ('BEDROCK','JAVA')), identity_value VARCHAR(36) NOT NULL, minecraft_name VARCHAR(32) NOT NULL, server VARCHAR(48) NOT NULL, verified_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(player_id,edition), UNIQUE(edition,identity_value))");
   await q("ALTER TABLE market_link_codes ALTER COLUMN purpose TYPE VARCHAR(24)");
-  await q("CREATE TABLE IF NOT EXISTS market_whatsapp_attempts (player_id BIGINT PRIMARY KEY REFERENCES market_players(id), phone VARCHAR(16) NOT NULL, attempts INT NOT NULL DEFAULT 0, daily_requests INT NOT NULL DEFAULT 0, window_start TIMESTAMPTZ NOT NULL DEFAULT now(), last_sent TIMESTAMPTZ, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now())");
 }
 export async function identityState(playerId){
-  const [row]=await q("SELECT p.id,p.discord_verified_at,p.whatsapp_verified_at,p.whatsapp_phone,COALESCE(json_agg(json_build_object('edition',m.edition,'name',m.minecraft_name,'verified_at',m.verified_at)) FILTER (WHERE m.edition IS NOT NULL),'[]'::json) AS minecraft_accounts FROM market_players p LEFT JOIN market_minecraft_identities m ON m.player_id=p.id WHERE p.id=$1 GROUP BY p.id",[playerId]);
+  const [row]=await q("SELECT p.id,p.discord_verified_at,COALESCE(json_agg(json_build_object('edition',m.edition,'name',m.minecraft_name,'verified_at',m.verified_at)) FILTER (WHERE m.edition IS NOT NULL),'[]'::json) AS minecraft_accounts FROM market_players p LEFT JOIN market_minecraft_identities m ON m.player_id=p.id WHERE p.id=$1 GROUP BY p.id",[playerId]);
   if(!row)throw bad('Player not found',404);
   const editions=row.minecraft_accounts||[];
-  return {discord_linked:Boolean(row.discord_verified_at),whatsapp_linked:Boolean(row.whatsapp_verified_at&&row.whatsapp_phone),whatsapp_masked:row.whatsapp_phone?row.whatsapp_phone.slice(0,3)+'••••'+row.whatsapp_phone.slice(-2):null,bedrock_linked:editions.some(x=>x.edition==='BEDROCK'),java_linked:editions.some(x=>x.edition==='JAVA'),minecraft_accounts:editions.map(x=>({edition:x.edition,name:x.name,verified_at:x.verified_at})),ready:Boolean(row.discord_verified_at&&row.whatsapp_verified_at&&editions.length>0)};
+  return {
+    discord_linked:Boolean(row.discord_verified_at),
+    bedrock_linked:editions.some(x=>x.edition==='BEDROCK'),
+    java_linked:editions.some(x=>x.edition==='JAVA'),
+    minecraft_accounts:editions.map(x=>({edition:x.edition,name:x.name,verified_at:x.verified_at})),
+    ready:Boolean(row.discord_verified_at)
+  };
 }
-export async function requireTripleVerified(playerId){
+export async function requireDiscordVerified(playerId){
   const state=await identityState(playerId);
-  if(!state.ready)throw bad('Before buying or selling, verify Discord, WhatsApp OTP, and one Minecraft account (Bedrock or Java) in My Account',403);
+  if(!state.discord_linked)throw bad('Verify your Discord account through the official AbszRPG bot using /marketlink before buying or selling.',403);
   return state;
 }
 export async function verifyLinkedMinecraft({playerId,edition,identity,username,server}){
