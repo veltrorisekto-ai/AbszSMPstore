@@ -4,9 +4,9 @@
   "servers": [
     {
       "id": "bedrock-smp",
-      "name": "AbszSMP Bedrock Realms",
+      "name": "Aegis",
       "subtitle": "Survival • Bedrock Edition",
-      "description": "Join the AbszSMP Bedrock world with your friends.",
+      "description": "Join the Aegis Bedrock world with your friends.",
       "icon": "⛏️",
       "featured": true,
       "bedrock": {
