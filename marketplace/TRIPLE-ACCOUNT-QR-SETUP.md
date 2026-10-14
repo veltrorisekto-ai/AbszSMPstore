@@ -1,78 +1,43 @@
-# AbszRPG Marketplace — Triple Identity and QR Security (October 2026)
+# Marketplace Identity & Seller QR Setup — Current Policy (14 October 2026)
 
-This is an **additive marketplace-only implementation**. The original store's Touch 'n Go checkout, store orders, Discord bot and Minecraft delivery bridge remain unchanged.
+> This guide **supersedes the previous triple-account verification design**. WhatsApp verification and Minecraft account linking are NOT mandatory. There is no paid WhatsApp OTP provider requirement.
 
-## Trading eligibility
+## Only Discord verification is required
 
-**No player may publish listings, purchase, accept/confirm receipt, verify payment, or receive trusted reputation until both buyer and seller have all three independently verified:**
+1. A player registers/signs in at https://abszrpg.shop/marketplace/.
+2. In **My Listings & Orders**, click **Verify Discord (/marketlink)** to request a one-time code (valid for 10 minutes).
+3. In the **official AbszRPG Discord server**, run `/marketlink <CODE>` using the same Discord user ID as the account registration. This slash command runs through the **existing** bot and verifies control of that Discord account.
+4. The Discord ID is locked after verified. Players cannot swap it from the website. Identity recovery requires audited staff intervention.
+5. Once verified, a player can buy/sell and register a seller QR. **No WhatsApp phone number, paid OTP service or Minecraft plugin is required just to trade.**
 
-1. **Discord user ID** — /marketlink one-time code through the existing Discord interaction bot. The matched Discord ID is frozen after verification; no self-service unlink/swap.
-2. **WhatsApp number** — real provider OTP (Twilio Verify, WhatsApp channel), limited rate and attempts. One verified number per account, no self-service change; masked in UI and never listed publicly.
-3. **Minecraft identity** — authenticated game-server bridge verifies either **Bedrock XUID** or **Java UUID** and in-game username. Once linked, that edition's identity is immutable. The same marketplace profile may bind a **second Java account after Bedrock**, or Bedrock after Java. A second edition never replaces an existing edition. Duplicate XUID/UUID binding across players is rejected.
+**Never credit a Discord ID merely because a player typed a number or a moderator marked `is_verified`; `discord_verified_at` must be set by the actual /marketlink interaction.** Users with older marketplace accounts remain gated until they link Discord.
 
-The user can still browse and sign in with incomplete identity. Old legacy self-declared Discord IDs and old minecraft_uuid strings do NOT count as verified Bedrock/Java identity. Old listing orders are preserved; unverified accounts cannot create new trades. Sellers can still PAUSE an old listing.
+## Optional Minecraft profiles
 
-**Staff recovery:** do not provide a self-service identity swap API. Account deletion/exceptional recovery needs owner review, auditable records, and compliance with applicable privacy rights.
+- Players may link a Bedrock XUID and a Java UUID as optional identity/profile enhancements, separately.
+- Linked edition identities cannot be silently changed; adding Java does not replace Bedrock.
+- The `/market link` server bridge is required only to use this optional feature. It is **not a prerequisite for creating listings or orders**.
+- Independent Minecraft item-transfer evidence remains useful for verified trade reputation where supported; otherwise owner-reviewed staff-supervised trades can be considered with real evidence.
 
-## WhatsApp setup — required before any player can trade
+## Seller direct QR payments
 
-The Vercel project was checked during implementation. It has **no configured WhatsApp verification provider credentials**.
+- Seller submits own QR image or HTTPS link and actual bank/e-wallet recipient name; owner reviews and approves.
+- An RM listing needs an approved QR and verified Discord for the seller and buyer.
+- Order snapshots the QR and recipient. Only order participants can view the QR while the order is in progress.
+- Buyer pays seller directly in their bank/e-wallet app; `I Have Paid` means **buyer claims to have paid**, not that payment was verified.
+- Seller checks actual incoming bank/e-wallet transaction before marking payment received. **Self-reported payment is not independent bank evidence.**
+- Staff midman coordinates a private ticket and never holds RM funds as escrow in this setup.
+- Seller trust increases only after independently checked evidence and anti-abuse rules; fake / repeated orders don't automatically increase reputation.
+- Launch service fee remains 0%.
 
-Set these as encrypted Vercel environment variables, not in ChatGPT or GitHub:
-- TWILIO_VERIFY_SERVICE_SID (VA...)
-- TWILIO_API_KEY_SID (SK...)
-- TWILIO_API_KEY_SECRET
+## Discord bot onboarding
 
-Use a real Twilio Verify Service configured for the **WhatsApp** delivery channel, and verify it can send international Malaysian +60 OTPs. Service must be approved/configured with any required WhatsApp sender or authentication template. API uses TLS+Basic Auth to POST /v2/Services/{ServiceSid}/Verifications with Channel=whatsapp and /VerificationCheck with the user-entered OTP.
+Owner logs in and opens Owner Moderation > Connect Existing Bot & 8 Channels. Use the existing eight supplied channel IDs. Then **Publish / Refresh All 8 Channels** to update previous messages; do not create an extra bot. Channels with no actual events can still show informational welcome posts.
 
-**No mock OTP fallback, manual 'WhatsApp verified' owner override or bypass for missing credentials.** The backend returns an explicit 503 until real provider credentials exist, without consuming attempts. SMS is NOT silently substituted for WhatsApp.
+## Safeguards and limitations
 
-Rate limits: max 5 OTP starts per 24-hour window per account, >=60 seconds between requests, max 6 OTP check attempts, expiry of 10 minutes. Phone only persisted to the player after provider reports approved. Avoid exposing phone numbers in Discord logs or public API.
+Discord-only is free but **less resistant to alt accounts** than multiple independently verified identities. Keep limits on pending orders, repeated-pair fraud reviews, payment disputes, unique evidence IDs, seller QR locking and owner reputation reversals. Discord verification alone **does not verify funds or Minecraft item delivery**.
 
-## Minecraft server bridge — required before trading
+The backend API and UI are deployed separately from actual Discord bot slash-command registration, private-channel permissions, bank payments or optional Minecraft bridge testing. Do not claim real end-to-end confirmation until those systems are exercised with test participants. Minecraft/Mojang rules and Malaysia's applicable laws still apply to selling items for RM.
 
-Existing server API credential is HTTP **Authorization: Bearer <existing BRIDGE API KEY>** over TLS, supplied only from trusted Minecraft server code. The bridge key is **not** exposed to players. To link, the real in-game player enters /market link <one-time code> and the server retrieves actual platform identity from authenticated server identity APIs.
-
-POST https://abszrpg.shop/api/market-proof with JSON. Example format — this is **documentation, not a fabricated verification**:
-
-For Java:
-{
- "op":"link","code":"<ONE_TIME_CODE>","edition":"JAVA",
- "minecraft_uuid":"<ACTUAL_JAVA_UUID>","minecraft_name":"<ACTUAL_IGN>",
- "server":"Java 1.21.1"
-}
-
-For Bedrock:
-{
- "op":"link","code":"<ONE_TIME_CODE>","edition":"BEDROCK",
- "bedrock_xuid":"<ACTUAL_MICROSOFT_XUID>","minecraft_name":"<ACTUAL_IGN>",
- "server":"Bedrock Realms"
-}
-
-**Do not derive XUID from display name.** The Bedrock player identity must originate from the authenticated Bedrock login/bridge. Do not use Java UUID for Bedrock identity. Never accept buyer-posted / self-provided UUID/XUID as proof.
-
-Current Minecraft server plugins were **not modified by this website rollout**. The code above is an authenticated backend integration contract; the actual Paper/Geyser and Bedrock add-on must be updated and tested before users can link.
-
-## Seller QR registration & manual payment
-
-- Verified seller submits a small QR PNG/JPEG/WebP file (under 100KB) or an HTTPS image URL and the bank/e-wallet recipient name.
-- QR status starts PENDING. Owner checks actual recipient identity independently, then APPROVES or REJECTS. QR is immutable from player side after submission, including rejected QR; owner-assisted recovery required.
-- A new MYR listing is only permitted with an APPROVED QR.
-- Buyer and seller must both be triple verified before order creation.
-- The order **snapshots** the approved recipient name and QR. The QR is served privately to authenticated order participants only when the order is in progress, not in the public listing API or bot.
-- Buyer pays **directly to seller** using the QR in the order. Middleman option coordinates/order ticket; it DOES NOT receive, custody, disburse or escrow the money.
-- 'I Have Paid' is only a **CLAIM**. Seller must check incoming funds in their own bank/e-wallet app; seller confirmation remains **self-reported**. Screenshot is not confirmation from a payment service or bank. The seller cannot mark the RM order delivered until confirming payment.
-- Buyer confirms item delivery separately. Verified seller reputation still requires independently checked evidence. A dispute suspends verified reputation credit.
-- Launch marketplace service fee remains **0%**. No wallet balance, paid coin cash-out or withdrawable virtual-currency ledger is created. COINS listings continue separately as non-cash-out in-game currency.
-
-## Critical caveats
-
-1. Microsoft/Mojang Minecraft monetization requirements can restrict real-money server/item sales, virtual currencies, server rewards and pay-to-earn. Confirm the allowed product categories before encouraging real-money trading.
-2. A direct QR transfer is **not escrow**; refunds and payment disputes cannot be automatically enforced by this platform. Middleman-held money is **not implemented** (would require a suitable licensed/contracted payment provider).
-3. Discord + WhatsApp + Minecraft identity linking reduces obvious fake trades but cannot eliminate fraud by users owning multiple legitimate accounts/phone numbers. Keep pairwise trade limits, unique proof IDs, reputation revocation and moderator investigation.
-4. WhatsApp phone numbers are personal data. Retain/use only as needed for identity verification, protect access, publish a privacy notice and handle legitimate deletion/account-recovery requests; never expose phone to other users.
-5. The QR flow is not a guarantee that Minecraft items can legally be traded for RM; users need to verify both game policies and local financial/consumer obligations.
-
-## What was tested
-
-Static JS syntax and Vercel preview GET/unauthenticated API smoke tests. Real WhatsApp OTP delivery, real authenticated Bedrock XUID/Paper UUID game bridge, production QR money movement and player-to-player item delivery cannot be tested until the user configures a provider and server extension. Do NOT claim full end-to-end live verification yet.
+Official store checkout and payments are not changed by this marketplace identity policy.
