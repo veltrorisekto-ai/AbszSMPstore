@@ -1,5 +1,5 @@
 import {sql,audit} from './_lib.js';
-import {ensureIdentitySchema,requireTripleVerified} from './_market-identity.js';
+import {ensureIdentitySchema,requireDiscordVerified} from './_market-identity.js';
 const query=(t,p=[])=>sql.query(t,p);
 const bad=(s,status=400)=>Object.assign(new Error(s),{status});
 export async function ensureSellerQR(){
@@ -14,7 +14,7 @@ export async function ensureSellerQR(){
  await query("ALTER TABLE market_orders ALTER COLUMN qr_snapshot_url TYPE TEXT");
 }
 export async function registerQR(sellerId,{qr_image_url,recipient_name}){
- await requireTripleVerified(sellerId);
+ await requireDiscordVerified(sellerId);
  const url=String(qr_image_url||'').trim();
  const recipient=String(recipient_name||'').trim();
  const isHTTPS=/^https:\/\/[^\s"<>@]{12,500}$/i.test(url);
