@@ -60,18 +60,18 @@ const originalMyTrades=myTrades;
 myTrades=async function(){
  await originalMyTrades();
  if(!me||!body.querySelector('#addFromMine'))return;
- const html='<div class="notice"><b>Three verifications required before trading</b><p>Discord '+(me.discord_linked?'✅':'❌')+' · WhatsApp '+(me.whatsapp_linked?'✅ '+esc(me.whatsapp_masked||''):'❌')+' · Bedrock '+(me.bedrock_linked?'✅':'—')+' · Java '+(me.java_linked?'✅':'—')+'</p>'
-  +'<p>Trading: '+(me.ready?'✅ Verified':'🔒 Locked; Discord + WhatsApp + Bedrock OR Java required')+'. Bound accounts cannot be replaced. You may add Java to Bedrock.</p></div>'
+ const html='<div class="notice"><b>Discord verification required to trade</b>'
+  +'<p>Discord: '+(me.discord_linked?'✅ Verified':'🔒 Not verified')+'. Trading: '+(me.ready?'✅ Enabled':'🔒 Locked until /marketlink completes')+'</p>'
+  +'<p>Optional Minecraft profiles: Bedrock '+(me.bedrock_linked?'✅ Linked':'Not linked')+' · Java '+(me.java_linked?'✅ Linked':'Not linked')+'. Adding Java does not replace Bedrock.</p>'
+  +'<p>Discord linking is free. No WhatsApp number or OTP is required.</p></div>'
   +'<div class="actions-flex">'
-  +(!me.discord_linked?'<button class="btn outline small" id="marketDiscordLink">Verify Discord</button>':'')
-  +(!me.whatsapp_linked?'<button class="btn outline small" id="marketWhatsappLink">Verify WhatsApp OTP</button>':'')
-  +(!me.bedrock_linked?'<button class="btn outline small" id="marketBedrockLink">Link Bedrock (XUID)</button>':'')
-  +(!me.java_linked?'<button class="btn outline small" id="marketJavaLink">Add Java (UUID)</button>':'')
+  +(!me.discord_linked?'<button class="btn green small" id="marketDiscordLink">Verify Discord (/marketlink)</button>':'')
+  +(!me.bedrock_linked?'<button class="btn outline small" id="marketBedrockLink">Link Bedrock (Optional)</button>':'')
+  +(!me.java_linked?'<button class="btn outline small" id="marketJavaLink">Add Java (Optional)</button>':'')
   +'<button class="btn outline small" id="marketQRSetup">Seller QR Setup</button></div>';
  const anchor=body.querySelector('#addFromMine')?.closest('.actions-flex');
  if(anchor)anchor.insertAdjacentHTML('beforebegin',html);
  if($('marketDiscordLink'))$('marketDiscordLink').onclick=()=>marketLinkCode('DISCORD');
- if($('marketWhatsappLink'))$('marketWhatsappLink').onclick=verifyWhatsapp;
  if($('marketBedrockLink'))$('marketBedrockLink').onclick=()=>marketLinkCode('MINECRAFT_BEDROCK');
  if($('marketJavaLink'))$('marketJavaLink').onclick=()=>marketLinkCode('MINECRAFT_JAVA');
  if($('marketQRSetup'))$('marketQRSetup').onclick=sellerQRSetup;
@@ -84,18 +84,6 @@ myTrades=async function(){
  }catch{}
 
 };
-async function verifyWhatsapp(){
- open('Verify WhatsApp','<div class="notice">Use your own WhatsApp number. A real OTP and third-party verification provider are required; the phone cannot be changed after verification.</div>'
- +'<form id="whatsappForm"><div class="field"><label>WhatsApp Number (+country code)</label><input type="tel" name="phone" placeholder="+60123456789" required></div><button class="btn green">Send OTP</button></form>');
- $('whatsappForm').onsubmit=async e=>{
-  e.preventDefault();
-  try{
-   await call('whatsapp_start',{phone:new FormData(e.currentTarget).get('phone')});
-   open('WhatsApp OTP','<p>Enter your WhatsApp code. Never share it with anyone.</p><form id="whatsappCheck"><div class="field"><label>OTP Code</label><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,10}" required></div><button class="btn green">Verify WhatsApp</button></form>');
-   $('whatsappCheck').onsubmit=async ev=>{ev.preventDefault();try{await call('whatsapp_check',{code:new FormData(ev.currentTarget).get('code')});await getSession();toast('WhatsApp verified and locked');myTrades()}catch(err){toast(err.message)}};
-  }catch(err){toast(err.message)}
- };
-}
 async function sellerQRSetup(){
  let data;try{data=await call('me')}catch(e){toast(e.message);return}
  const qr=data.seller_qr;

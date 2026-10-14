@@ -4,8 +4,7 @@ import { sql, send, fail, readBody, qs, requireAdmin, audit } from './_lib.js';
 import { waitUntil } from '@vercel/functions';
 import { ensureTrustSchema, verifyWithEvidence } from './_market-trust.js';
 import { issueLinkCode } from './_market-link.js';
-import { ensureIdentitySchema,identityState,requireTripleVerified } from './_market-identity.js';
-import { beginWhatsApp,confirmWhatsApp } from './_market-whatsapp.js';
+import { ensureIdentitySchema,identityState,requireDiscordVerified } from './_market-identity.js';
 import {ensureSellerQR,registerQR,approveQR,getSellerQR,resetQR} from './_market-qr.js';
 import { sendMarketEvent, syncDashboard, dashboardCounts } from './_market-discord.js';
 
@@ -92,7 +91,7 @@ export default async function handler(req,res){
     const p=qs(req),op=getPath(req);
     if(op==='list'){
       const search=clean(p.get('q'),80),server=clean(p.get('server'),40),category=clean(p.get('category'),40),sort=clean(p.get('sort'),20);
-      const rows=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified,(s.discord_verified_at IS NOT NULL AND s.whatsapp_verified_at IS NOT NULL AND EXISTS(SELECT 1 FROM market_minecraft_identities mi WHERE mi.player_id=s.id)) AS triple_verified, COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) AS completed FROM market_orders o WHERE o.seller_id=s.id AND o.status='COMPLETED' AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) AS review_count,round(avg(stars),2) AS stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false AND ($1='' OR l.title ILIKE '%'||$1||'%' OR l.description ILIKE '%'||$1||'%') AND ($2='' OR l.server=$2) AND ($3='' OR l.category=$3) ORDER BY l.created_at DESC LIMIT 120",[search,server,category]);
+      const rows=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified,(s.discord_verified_at IS NOT NULL) AS discord_verified, COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) AS completed FROM market_orders o WHERE o.seller_id=s.id AND o.status='COMPLETED' AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) AS review_count,round(avg(stars),2) AS stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false AND ($1='' OR l.title ILIKE '%'||$1||'%' OR l.description ILIKE '%'||$1||'%') AND ($2='' OR l.server=$2) AND ($3='' OR l.category=$3) ORDER BY l.created_at DESC LIMIT 120",[search,server,category]);
       if(sort==='price-low')rows.sort((a,b)=>a.unit_price-b.unit_price);
       if(sort==='price-high')rows.sort((a,b)=>b.unit_price-a.unit_price);
       if(sort==='trusted')rows.sort((a,b)=>Number(b.completed)-Number(a.completed));
@@ -100,7 +99,7 @@ export default async function handler(req,res){
     }
     if(op==='seller'){
       const id=validID(p.get('id'));if(!id)throw bad('Invalid seller ID');
-      const [seller]=await query("SELECT p.id,p.username,p.discord_id,p.discord_name,p.is_verified,p.created_at,(p.discord_verified_at IS NOT NULL AND p.whatsapp_verified_at IS NOT NULL AND EXISTS(SELECT 1 FROM market_minecraft_identities mi WHERE mi.player_id=p.id)) AS triple_verified,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.rating,0)::numeric(3,2) AS rating FROM market_players p LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=p.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(stars),2) rating FROM market_reviews r JOIN market_orders o ON o.id=r.order_id WHERE r.seller_id=p.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE p.id=$1 AND p.is_banned=false",[id]);
+      const [seller]=await query("SELECT p.id,p.username,p.discord_id,p.discord_name,p.is_verified,p.created_at,(p.discord_verified_at IS NOT NULL) AS discord_verified,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.rating,0)::numeric(3,2) AS rating FROM market_players p LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=p.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(stars),2) rating FROM market_reviews r JOIN market_orders o ON o.id=r.order_id WHERE r.seller_id=p.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE p.id=$1 AND p.is_banned=false",[id]);
       if(!seller)throw bad('Seller not found',404);
       const [reviews,listings,metrics]=await Promise.all([
         query("SELECT r.stars,r.comment,r.created_at,b.username AS buyer_name FROM market_reviews r JOIN market_players b ON b.id=r.buyer_id JOIN market_orders o ON o.id=r.order_id WHERE r.seller_id=$1 AND o.verification_status='VERIFIED' AND o.reputation_eligible=true ORDER BY r.created_at DESC LIMIT 50",[id]),
@@ -141,7 +140,7 @@ export default async function handler(req,res){
     if(op==='stats')return send(res,200,{ok:true,stats:await dashboardCounts(query)});
     if(op==='listing'){
       const id=validID(p.get('id'));if(!id)throw bad('Invalid listing');
-      const [listing]=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified,(s.discord_verified_at IS NOT NULL AND s.whatsapp_verified_at IS NOT NULL AND EXISTS(SELECT 1 FROM market_minecraft_identities mi WHERE mi.player_id=s.id)) AS triple_verified,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=s.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(v.stars),2) stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.id=$1 AND l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false",[id]);
+      const [listing]=await query("SELECT l.id,l.title,l.description,l.server,l.category,l.currency,l.unit_price,l.stock,l.image_url,l.created_at,s.id AS seller_id,s.username AS seller_name,s.is_verified,(s.discord_verified_at IS NOT NULL) AS discord_verified,COALESCE(t.completed,0)::int AS completed,COALESCE(r.review_count,0)::int AS review_count,COALESCE(r.stars,0)::numeric(3,2) AS rating FROM market_listings l JOIN market_players s ON s.id=l.seller_id LEFT JOIN LATERAL (SELECT count(*) completed FROM market_orders WHERE seller_id=s.id AND status='COMPLETED' AND verification_status='VERIFIED' AND reputation_eligible=true) t ON true LEFT JOIN LATERAL (SELECT count(*) review_count,round(avg(v.stars),2) stars FROM market_reviews v JOIN market_orders o ON o.id=v.order_id WHERE v.seller_id=s.id AND o.verification_status='VERIFIED' AND o.reputation_eligible=true) r ON true WHERE l.id=$1 AND l.status='ACTIVE' AND l.stock>0 AND s.is_banned=false",[id]);
       if(!listing)throw bad('Listing no longer available',404);
       return send(res,200,{ok:true,listing});
     }
@@ -254,14 +253,6 @@ export default async function handler(req,res){
     throw bad('Unknown admin action');
   }
   const user=await account(req);
-  if(op==='whatsapp_start'){
-    const result=await beginWhatsApp(user.id,body.phone);
-    return send(res,200,{ok:true,...result});
-  }
-  if(op==='whatsapp_check'){
-    const result=await confirmWhatsApp(user.id,body.code);
-    return send(res,200,{ok:true,...result});
-  }
   if(op==='identity'){
     return send(res,200,{ok:true,identity:await identityState(user.id)});
   }
@@ -276,7 +267,7 @@ export default async function handler(req,res){
     return send(res,201,{ok:true,...result});
   }
   if(op==='create_listing'){
-    await requireTripleVerified(user.id);
+    await requireDiscordVerified(user.id);
     const title=clean(body.title,100),description=clean(body.description,1600),server=clean(body.server,40),category=clean(body.category,40),currency=clean(body.currency,8),price=Number(body.unit_price),stock=Number(body.stock),image=clean(body.image_url,500);
     if(title.length<5||description.length<15||!VALID_SERVERS.includes(server)||!VALID_CATEGORIES.includes(category)||!VALID_CURRENCIES.includes(currency)||!Number.isSafeInteger(price)||price<1||price>100000000||!Number.isSafeInteger(stock)||stock<1||stock>100000)throw bad('Check title, description, server, category, price and stock');
     if(image&&(!/^https:\/\/[^\s"<>]+$/i.test(image)||image.includes('@')))throw bad('Use a public HTTPS image URL or leave it blank');
@@ -291,7 +282,7 @@ export default async function handler(req,res){
     return send(res,201,{ok:true,listing});
   }
   if(op==='listing_update'){
-    await requireTripleVerified(user.id);
+    await requireDiscordVerified(user.id);
     const id=validID(body.id),stock=Number(body.stock),price=Number(body.unit_price);
     if(!id||!Number.isSafeInteger(stock)||stock<0||stock>100000||!Number.isSafeInteger(price)||price<1||price>100000000)throw bad('Invalid listing quantity or coin price');
     const rows=await query("WITH before AS MATERIALIZED (SELECT id,unit_price,stock FROM market_listings WHERE id=$1 AND seller_id=$2 AND status IN ('ACTIVE','PAUSED') FOR UPDATE), changed AS (UPDATE market_listings l SET unit_price=$3,stock=$4,status=CASE WHEN $4=0 THEN 'PAUSED' ELSE l.status END,updated_at=now() FROM before b WHERE l.id=b.id RETURNING l.id,l.title,l.server,l.currency,l.status,l.unit_price,l.stock,b.unit_price AS previous_price,b.stock AS previous_stock) SELECT * FROM changed",[id,user.id,price,stock]);
@@ -304,7 +295,7 @@ export default async function handler(req,res){
     return send(res,200,{ok:true,listing});
   }
   if(op==='listing_status'){
-    if(body.status==='ACTIVE')await requireTripleVerified(user.id);
+    if(body.status==='ACTIVE')await requireDiscordVerified(user.id);
     const id=validID(body.id);if(!id)throw bad('Invalid listing');
     const next=body.status==='PAUSED'?'PAUSED':body.status==='ACTIVE'?'ACTIVE':null;
     if(!next)throw bad('Invalid listing status');
@@ -313,12 +304,12 @@ export default async function handler(req,res){
     return send(res,200,{ok:true});
   }
   if(op==='buy'){
-    await requireTripleVerified(user.id);
+    await requireDiscordVerified(user.id);
     const id=validID(body.listing_id),quantity=Number(body.quantity),method=body.method;
     if(!id||!Number.isSafeInteger(quantity)||quantity<1||quantity>64||!['MIDMAN','DISCORD'].includes(method))throw bad('Invalid purchase request');
     const [sellerForIdentity]=await query("SELECT seller_id FROM market_listings WHERE id=$1",[id]);
     if(!sellerForIdentity)throw bad('Listing not available',404);
-    await requireTripleVerified(sellerForIdentity.seller_id);
+    await requireDiscordVerified(sellerForIdentity.seller_id);
     const [listingCurrency]=await query("SELECT currency,seller_id FROM market_listings WHERE id=$1",[id]);
     const sellerQR=listingCurrency?.currency==='MYR'?await getSellerQR(listingCurrency.seller_id):null;
     if(listingCurrency?.currency==='MYR'&&sellerQR?.status!=='APPROVED')throw bad('Seller does not have an approved QR recipient. Do not transfer money.',409);
@@ -343,7 +334,7 @@ export default async function handler(req,res){
   const buyer=String(order.buyer_id)===String(user.id),seller=String(order.seller_id)===String(user.id);
   // Existing orders remain readable and cancellable if an account loses verification.
   if(['accept','delivered','received','review','payment_claim','payment_confirm'].includes(op)){
-    await requireTripleVerified(user.id);
+    await requireDiscordVerified(user.id);
   }
   if(op==='payment_claim'){
     if(!buyer||order.currency!=='MYR'||order.status!=='IN_PROGRESS')throw bad('Buyer may claim QR payment only after the trade begins',409);

@@ -1,6 +1,6 @@
 // Trust is earned only after independent evidence, never buyer/seller button clicks.
 import {sql,audit} from './_lib.js';
-import {requireTripleVerified} from './_market-identity.js';
+import {requireDiscordVerified} from './_market-identity.js';
 export const marketQuery=(q,values=[])=>sql.query(q,values);
 export async function ensureTrustSchema(){
   await marketQuery("ALTER TABLE market_orders ADD COLUMN IF NOT EXISTS verification_status VARCHAR(24) NOT NULL DEFAULT 'UNVERIFIED'");
@@ -35,17 +35,18 @@ export async function verifyWithEvidence({orderId,source,reference,actor,overrid
   const [order]=await marketQuery("SELECT o.*,buyer.discord_id buyer_discord,buyer.discord_verified_at buyer_discord_verified,buyer.minecraft_uuid buyer_uuid,buyer.minecraft_verified_at buyer_minecraft_verified,seller.discord_id seller_discord,seller.discord_verified_at seller_discord_verified,seller.minecraft_uuid seller_uuid,seller.minecraft_verified_at seller_minecraft_verified FROM market_orders o JOIN market_players buyer ON buyer.id=o.buyer_id JOIN market_players seller ON seller.id=o.seller_id WHERE o.id=$1",[orderId]);
   if(!order)throw Object.assign(new Error('Order not found'),{status:404});
   if(order.status!=='COMPLETED')throw Object.assign(new Error('Order must be confirmed received by the buyer first'),{status:409});
-  await requireTripleVerified(order.buyer_id);
-  await requireTripleVerified(order.seller_id);
+  await requireDiscordVerified(order.buyer_id);
+  await requireDiscordVerified(order.seller_id);
   if(order.verification_status==='VERIFIED')return {already_verified:true,eligible:order.reputation_eligible,order};
   if(order.buyer_id===order.seller_id||order.buyer_discord===order.seller_discord)throw Object.assign(new Error('Same-owner identity risk: cannot verify'),{status:409});
   if(source==='STAFF'&&(order.method!=='MIDMAN'||!order.midman_approved_at))throw Object.assign(new Error('Staff supervision proof requires an approved middleman trade; direct trades require server evidence'),{status:409});
   const risk=await fraudScore(order);
   const suspicious=risk.same_pair_day>=5||risk.seller_disputes>=3;
   if(suspicious&&!override)throw Object.assign(new Error('Flagged repeated trades or disputes. Staff must investigate before trusting this claim.'),{status:409});
-  const bothLinked=true; // requireTripleVerified checked Discord, WhatsApp and verified Minecraft identity for both parties.
-  const eligible=bothLinked&&!risk.eligible_pair_day&&!suspicious;
-  const note=suspicious?'MANUAL_OVERRIDE_SUSPICIOUS':risk.eligible_pair_day?'REPEATED_PAIR_24H':risk.same_pair_day>=3?'REPEATED_TRADES_REVIEW':!bothLinked?'ACCOUNT_LINKS_UNVERIFIED':'';
+  // Both parties have verified Discord via the official bot. Independent staff or trusted
+  // server evidence is still mandatory; Discord linking alone never verifies a trade.
+  const eligible=!risk.eligible_pair_day&&!suspicious;
+  const note=suspicious?'MANUAL_OVERRIDE_SUSPICIOUS':risk.eligible_pair_day?'REPEATED_PAIR_24H':risk.same_pair_day>=3?'REPEATED_TRADES_REVIEW':'';
   let result;
   try {
     const rows=await marketQuery("UPDATE market_orders SET verification_status='VERIFIED',verification_source=$2,verification_reference=$3,verified_by=$4,verified_at=now(),reputation_eligible=$5,risk_note=$6,updated_at=now() WHERE id=$1 AND status='COMPLETED' AND verification_status<>'VERIFIED' RETURNING id,seller_id,buyer_id,verification_status,reputation_eligible",[orderId,source,reference,String(actor),eligible,note||null]);

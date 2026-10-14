@@ -39,14 +39,14 @@ function bindFilters(){
 function listingArt(item){const icons={'Weapons':'⚔️','Armor':'🛡️','Tools':'⛏️','Blocks':'🧱','Materials':'💎','Rare Items':'👑','Pets':'🐾','Other':'📦'};
  return item.image_url?'<img src="'+esc(item.image_url)+'" loading="lazy" alt="'+esc(item.title)+'">':'<span role="img" aria-label="'+esc(item.category)+'">'+(icons[item.category]||'💎')+'</span>';
 }
-function trusted(s){return (s.triple_verified?'<span class="tag verified">✓ Discord + WhatsApp + Minecraft</span>':'<span class="tag warn">Triple verification pending</span>')+(s.is_verified?' <span class="tag verified">✓ Staff-checked</span>':'')}
+function trusted(s){return (s.discord_verified?'<span class="tag verified">✓ Discord Verified</span>':'<span class="tag warn">Discord not linked</span>')+(s.is_verified?' <span class="tag verified">✓ Staff-checked</span>':'')}
 function card(item){
  return '<article class="listing-card"><div class="item-art">'+listingArt(item)+'</div><div class="listing-body">'
   +'<div class="tagline"><span class="tag">'+esc(item.server)+'</span><span class="tag">'+esc(item.category)+'</span></div>'
   +'<h3>'+esc(item.title)+'</h3><p class="excerpt">'+esc(item.description.length>140?item.description.slice(0,140)+'…':item.description)+'</p>'
   +'<div><button class="seller-link" data-seller="'+esc(item.seller_id)+'">By '+esc(item.seller_name)+' ↗</button> '+trusted(item)+'</div>'
   +'<div class="mini-muted"><span class="stars">★ '+(Number(item.review_count)>0?Number(item.rating).toFixed(1):'New')+'</span> · '+Number(item.completed)+' completed trades · '+item.stock+' available</div>'
-  +'<div class="card-bottom"><div><div class="price">'+money(item.unit_price,item.currency)+'</div><small class="mini-muted">per item</small></div>'+(item.triple_verified?'<button class="btn gold small" data-buy="'+esc(item.id)+'">Buy Item →</button>':'<button class="btn outline small" type="button" disabled>Seller Not Verified</button>')+'</div></div></article>';
+  +'<div class="card-bottom"><div><div class="price">'+money(item.unit_price,item.currency)+'</div><small class="mini-muted">per item</small></div>'+(item.discord_verified?'<button class="btn gold small" data-buy="'+esc(item.id)+'">Buy Item →</button>':'<button class="btn outline small" type="button" disabled>Seller Discord Unverified</button>')+'</div></div></article>';
 }
 async function refreshListings(){
  if(busy)return;busy=true;
@@ -68,13 +68,13 @@ async function refreshListings(){
 }
 function accountModal(register=false){
  open(register?'Create Player Account':'Player Sign In',
- '<p class="muted">Your marketplace player account is separate from the official store owner login. Discord, WhatsApp OTP, and one verified Minecraft account (Bedrock or Java) are mandatory for trade. Your linked Discord and Minecraft accounts cannot be changed by players.</p>'
+ '<p class="muted">Your marketplace player account is separate from the official store owner login. Only Discord verification via the existing AbszRPG bot is mandatory to trade. Optional Minecraft Bedrock/Java account links can be added later and stay bound.</p>'
  +'<form id="accountForm">'
  +'<div class="field"><label>MINECRAFT USERNAME</label><input name="username" autocomplete="username" minlength="3" maxlength="32" required placeholder="Your exact Java/Bedrock name"></div>'
  +(register?'<div class="form-grid"><div class="field"><label>DISCORD USER ID (17–20 DIGITS)</label><input name="discord_id" inputmode="numeric" pattern="[0-9]{17,20}" required placeholder="Copy User ID"></div><div class="field"><label>DISCORD DISPLAY NAME</label><input name="discord_name" maxlength="64" minlength="2" required placeholder="Your Discord name"></div></div><p class="form-footnote">Find your ID: enable Discord Developer Mode, right-click your profile and choose <strong>Copy User ID</strong>. This ID is not proof of ownership.</p>':'')
  +'<div class="field"><label>PASSWORD</label><input name="password" autocomplete="'+(register?'new-password':'current-password')+'" type="password" required minlength="12" maxlength="128"></div>'
  +'<div class="form-row"><button type="submit" class="btn gold">'+(register?'Create Account':'Sign In')+'</button><button type="button" class="btn outline" id="changeAccountMode">'+(register?'Already registered? Sign in':'New player? Register')+'</button></div></form>'
- +'<div class="notice">Discord, WhatsApp and Minecraft verification is required before trading. Do not share linking codes or OTPs.</div>');
+ +'<div class="notice">Discord /marketlink confirmation is required before trading. No WhatsApp verification is required. Never share linking codes.</div>');
  $('changeAccountMode').onclick=()=>accountModal(!register);
  $('accountForm').onsubmit=async event=>{
   event.preventDefault();
@@ -98,7 +98,7 @@ $('search').addEventListener('input',()=>delay(refreshListings));
 for(const id of ['serverFilter','categoryFilter','sortFilter'])$(id).addEventListener('change',refreshListings);
 function newListing(){
  if(!mustLogin())return;
- if(!me.ready){toast('Verify Discord, WhatsApp OTP and Minecraft first');myTrades();return;}
+ if(!me.ready){toast('Verify your Discord account with /marketlink first');myTrades();return;}
  open('List an Item for Sale','<p class="muted">Your listing will become visible to buyers immediately. Only offer items you actually own and can deliver. No real-money transfer is handled by this website.</p>'
  +'<form id="listingForm">'
  +'<div class="field"><label>ITEM NAME</label><input name="title" required minlength="5" maxlength="100" placeholder="e.g. Enchanted Netherite Sword"></div>'
@@ -108,7 +108,7 @@ function newListing(){
  +'<div class="form-grid"><div class="field"><label>PRICE CURRENCY</label><select name="currency" id="currency" required><option value="MYR">RM (buyer pays approved seller QR)</option><option value="COINS">In-game coins (no cash-out)</option></select></div><div class="field"><label id="priceLabel">PRICE PER ITEM (RM)</label><input type="number" name="price" min="0.01" max="1000000" step="0.01" required></div></div>'
  +'<div class="form-grid"><div class="field"><label>QUANTITY AVAILABLE</label><input type="number" name="stock" min="1" max="100000" step="1" required value="1"></div>'
  +'<div class="field"><label>HTTPS IMAGE URL (OPTIONAL)</label><input type="url" name="image_url" maxlength="500" placeholder="https://…"></div></div>'
- +'<div class="notice">RM listings require an approved seller QR. Seller receives money directly; the marketplace does not hold funds. Both accounts need verified Discord, WhatsApp and Minecraft. In-game coins cannot be cashed out. Sales must comply with Minecraft usage rules and local laws.</div>'
+ +'<div class="notice">RM listings require an approved seller QR. Seller receives money directly; the marketplace does not hold funds. Both accounts need verified Discord. In-game coins cannot be cashed out. Sales must comply with Minecraft usage rules and local laws.</div>'
  +'<div class="form-row"><button class="btn green" type="submit">Publish Listing</button></div></form>');
  $('currency').onchange=()=>{
   const rm=$('currency').value==='MYR';$('priceLabel').textContent=rm?'PRICE PER ITEM (RM)':'PRICE PER ITEM (COINS)';
@@ -132,10 +132,10 @@ function selectMethod(method){
 }
 function buy(id){
  if(!mustLogin())return;
- if(!me.ready){toast('Verify Discord, WhatsApp OTP and Minecraft first');myTrades();return;}
+ if(!me.ready){toast('Verify your Discord account with /marketlink first');myTrades();return;}
  const item=liveListings.find(v=>String(v.id)===String(id));
  if(!item){toast('Refresh and try again');return}
- if(!item.triple_verified){toast('Seller has not completed all 3 verifications');return}
+ if(!item.discord_verified){toast('Seller has not verified their Discord account');return}
  if(String(item.seller_id)===String(me.id)){toast('You cannot purchase your own listing');return}
  chosenListing=item;chosenMethod='MIDMAN';
  open('Purchase: '+item.title,'<div class="trade-summary"><b>'+esc(item.server)+' · '+esc(item.category)+'</b><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p>'
@@ -252,7 +252,7 @@ async function ownerModeration(){
  +(data.orders.length?data.orders.map(o=>'<div class="order-card"><b>Order #'+o.id+' · '+esc(o.title)+'</b><p>'+esc(o.buyer_name)+' buying from '+esc(o.seller_name)+' · '+esc(o.status)+'</p><p>'+o.quantity+' × '+money(o.unit_price,o.currency)+'</p><div class="actions-flex">'
  +(o.status==='AWAITING_MIDMAN'?'<button class="btn green small" data-admin="admin_midman" data-id="'+o.id+'">Approve Supervision</button>':'<button class="btn gold small" data-admin="admin_resume" data-id="'+o.id+'">Resume Trade</button>')
  +'<button class="btn danger small" data-admin="admin_cancel" data-id="'+o.id+'">Cancel Order</button></div></div>').join(''):'<p class="muted">No pending requests or disputes.</p>')
- +'<hr class="divider"><h3>Seller Identity Checks</h3><p class="muted">Mark verified only after confirming this player owns their Minecraft/Discord identities. Verification is not a payment guarantee.</p>'
+ +'<hr class="divider"><h3>Seller Identity Checks</h3><p class="muted">Check linked Discord identity and independently review any other supporting evidence before granting staff trust. Verification is not a payment guarantee.</p>'
  +data.sellers.map(s=>'<div class="my-listing"><strong>'+esc(s.username)+'</strong> '+trusted(s)+' '+(s.is_banned?'<span class="tag warn">Banned</span>':'')+'<p>Discord: '+esc(s.discord_name)+' · '+esc(s.discord_id)+'</p><div class="actions-flex"><button class="btn outline small" data-admin="admin_verify" data-id="'+s.id+'" data-verified="'+(s.is_verified?'false':'true')+'">'+(s.is_verified?'Remove Verification':'Staff-Verify Identity')+'</button><button class="btn danger small" data-admin="admin_ban" data-id="'+s.id+'" data-banned="'+(s.is_banned?'false':'true')+'">'+(s.is_banned?'Unban Player':'Ban Player')+'</button></div></div>').join('')
  +'<hr class="divider"><h3>Moderate Listings</h3>'
  +data.listings.map(l=>'<div class="my-listing"><strong>'+esc(l.title)+'</strong><p>Seller: '+esc(l.seller_name)+' · '+esc(l.status)+' · '+l.stock+' in stock</p><button class="btn danger small" data-admin="admin_remove_listing" data-id="'+l.id+'">Remove Listing</button></div>').join(''));

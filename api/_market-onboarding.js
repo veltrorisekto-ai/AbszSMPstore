@@ -4,7 +4,7 @@ const WEB='https://abszrpg.shop/marketplace/';
 const INFO={
  marketplace:{
   title:'🛒 Welcome to AbszRPG Player Marketplace',
-  description:'Browse real player listings, compare sellers, or list your own Minecraft items.\n\n**Launch trading service fee: 0%.** RM listings use the approved seller QR: buyers pay sellers directly only after the order is active. The seller confirms incoming money through their own bank/e-wallet account.\n\n**To buy or sell, verify all three:** Discord via the existing bot, WhatsApp through a real OTP and Minecraft via verified Bedrock XUID or Java UUID. A player with Bedrock linked may add Java; linked accounts cannot be changed by players.\n\nNo website escrow, automatic item delivery, wallet top-up or cash-out. Never trust a screenshot as proof of payment.',
+  description:'Browse real player listings, compare sellers, or list your own Minecraft items.\n\n**Launch trading service fee: 0%.** RM listings use the approved seller QR: buyers pay sellers directly only after the order is active. The seller confirms incoming money through their own bank/e-wallet account.\n\n**To buy or sell, verify Discord only (FREE)** using the existing AbszRPG bot with `/marketlink`. A self-entered Discord ID is not verification. Minecraft Bedrock XUID / Java UUID account linking is optional and may be added later. No WhatsApp OTP is required.\n\nNo website escrow, automatic item delivery, wallet top-up or cash-out. Never trust a screenshot as proof of payment.',
   action:'Browse or Sell Items'
  },
  deals:{
@@ -14,7 +14,7 @@ const INFO={
  },
  verified:{
   title:'✅ Only Independently Verified Trades Appear Here',
-  description:'This channel will announce transactions only after real staff evidence review or authenticated Minecraft server transfer evidence.\n\n**Order Received ≠ Verified Trade.** Buyer and seller clicks alone cannot increase seller trust scores.\n\nVerified seller rankings require real Discord + WhatsApp OTP + Minecraft account links, evidence and anti-abuse checks. There are no sample/fake completed trades.',
+  description:'This channel will announce transactions only after real staff evidence review or authenticated Minecraft server transfer evidence.\n\n**Order Received ≠ Verified Trade.** Buyer and seller clicks alone cannot increase seller trust scores.\n\nVerified seller rankings require a real bot-confirmed Discord link, independent proof of a real trade and anti-abuse checks. Optional Minecraft links alone are not proof of delivery. There are no sample/fake completed trades.',
   action:'Learn About Trade Safety'
  },
  reviews:{
