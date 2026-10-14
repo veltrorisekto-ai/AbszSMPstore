@@ -16,6 +16,14 @@
   },
   "rewrites": [
     {
+      "source": "/hosting",
+      "destination": "/hosting/index.html"
+    },
+    {
+      "source": "/hosting/",
+      "destination": "/hosting/index.html"
+    },
+    {
       "source": "/join",
       "destination": "/join/index.html"
     },
