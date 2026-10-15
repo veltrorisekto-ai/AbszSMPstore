@@ -1,0 +1,32 @@
+{
+  "game": "Absz Dungeon GO!",
+  "version": "0.9.0",
+  "channel": "online-alpha",
+  "released": "2026-10-15",
+  "android": {
+    "version": 9,
+    "size": 27448855,
+    "sha256": "e155612886d9d06d8665540ca119f0f5c5593583a92a25866ae480bdb01fd4f8",
+    "filename": "Absz-Dungeon-GO-v0.9.0-Online-ARM64.apk",
+    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/Absz-Dungeon-GO-v0.9.0-Online-ARM64.apk"
+  },
+  "windows": {
+    "version": 9,
+    "size": 35671311,
+    "sha256": "b9906a99b460d1d49bb62c8204bc998a8093b26478deb98973dc3906065061f2",
+    "filename": "Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
+    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip"
+  },
+  "windows_exe": {
+    "version": 9,
+    "size": 98526440,
+    "sha256": "a2bdcda5da43dae229048a42d28b203919b4222fe010f4864713953cb1bfe833",
+    "filename": "Absz-Dungeon-GO.exe"
+  },
+  "content": {
+    "size": 22831544,
+    "sha256": "d15718e7de564b1d6ff62c17c01cccd701bdb9cc6a45cf01d9990a0c6878b84b",
+    "version": "0.9.0-r1"
+  },
+  "checksums": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/SHA256SUMS.txt"
+}
