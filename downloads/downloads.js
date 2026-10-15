@@ -39,7 +39,7 @@ async function populateRelease(){
     }
   }catch(error){
     console.warn('Cannot refresh game release metadata:',error);
-    notify('Maklumat release terkini belum boleh disahkan. Semak checksums rasmi sebelum memasang.');
+    notify('The latest release metadata could not be verified. Check the official checksums before installing.');
   }
 }
 async function checkRealm(){
@@ -50,7 +50,7 @@ async function checkRealm(){
     if(!response.ok)throw new Error('API unavailable');
     const result=await response.json();
     if(result.game!=='Absz Dungeon GO!'||result.mode!=='online-alpha')throw new Error('Unexpected service');
-    text('api-status','Game API aktif');
+    text('api-status','Game API reachable');
     /* The /health response identifies the API only; it does NOT prove gameplay realm is online.
        Only a dedicated validated multiplayer-health flag can confirm the realm. */
     if(result.realm?.status==='online' && result.realm?.validated===true){
@@ -60,11 +60,11 @@ async function checkRealm(){
       text('realm-status','Offline');
       $('realm-dot').classList.remove('confirmed');
     }else{
-      text('realm-status','Belum disahkan');
+      text('realm-status','Unverified');
     }
   }catch{
-    text('api-status','API tidak dapat dicapai');
-    text('realm-status','Belum disahkan');
+    text('api-status','Game API unreachable');
+    text('realm-status','Unverified');
     $('realm-dot').classList.remove('confirmed');
   }finally{clearTimeout(timeout);}
 }
@@ -72,7 +72,7 @@ const toggle=document.querySelector('.mobile-toggle');
 const siteNav=$('site-nav');
 function setMenu(open){
   toggle.setAttribute('aria-expanded',String(open));
-  toggle.setAttribute('aria-label',open?'Tutup navigasi':'Buka navigasi');
+  toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');
   siteNav.classList.toggle('open',open);
 }
 toggle.addEventListener('click',()=>setMenu(toggle.getAttribute('aria-expanded')!=='true'));
@@ -82,7 +82,7 @@ document.addEventListener('click',event=>{
   if(siteNav.classList.contains('open')&&!siteNav.contains(event.target)&&!toggle.contains(event.target))setMenu(false);
 });
 for(const action of document.querySelectorAll('.download-action')){
-  action.addEventListener('click',()=>notify('Membuka muat turun rasmi…'));
+  action.addEventListener('click',()=>notify('Opening official download…'));
 }
 const tabs=Array.from(document.querySelectorAll('[role="tab"]'));
 function activateTab(tab,focus=false){
@@ -115,8 +115,8 @@ document.querySelectorAll('[data-lightbox]').forEach(tile=>tile.addEventListener
   /* Restrict image sources to the two authored, existing first-party concept illustrations. */
   if(!['/assets/dungeon/adventure.webp','/assets/dungeon/boss.webp'].includes(path))return;
   dialogImage.src=path;
-  dialogImage.alt=tile.querySelector('img')?.alt||'Ilustrasi konsep game';
-  dialogCaption.textContent=tile.dataset.caption||'Ilustrasi konsep — bukan screenshot gameplay.';
+  dialogImage.alt=tile.querySelector('img')?.alt||'Game concept art';
+  dialogCaption.textContent=tile.dataset.caption||'Concept art — not actual gameplay.';
   if(typeof dialog.showModal==='function')dialog.showModal();
 }));
 dialog.querySelector('.lightbox-close').addEventListener('click',()=>dialog.close());
