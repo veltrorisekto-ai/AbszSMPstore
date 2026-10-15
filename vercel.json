@@ -16,6 +16,14 @@
   },
   "rewrites": [
     {
+      "source": "/downloads/credits/",
+      "destination": "/downloads/credits/index.html"
+    },
+    {
+      "source": "/downloads/credits",
+      "destination": "/downloads/credits/index.html"
+    },
+    {
       "source": "/downloads",
       "destination": "/downloads/index.html"
     },
@@ -72,12 +80,12 @@
     },
     {
       "source": "/downloads/windows",
-      "destination": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc2/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
+      "destination": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc3/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
       "permanent": false
     },
     {
       "source": "/downloads/checksums",
-      "destination": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc2/SHA256SUMS.txt",
+      "destination": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc3/SHA256SUMS.txt",
       "permanent": false
     }
   ],
