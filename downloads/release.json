@@ -1,33 +1,32 @@
 {
   "game": "Absz Dungeon GO!",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "channel": "online-alpha",
   "released": "2026-10-15",
   "android": {
-    "version": 9,
-    "size": 27448855,
-    "sha256": "e155612886d9d06d8665540ca119f0f5c5593583a92a25866ae480bdb01fd4f8",
-    "filename": "Absz-Dungeon-GO-v0.9.0-Online-ARM64.apk",
-    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/Absz-Dungeon-GO-v0.9.0-Online-ARM64.apk"
+    "version": 10,
+    "size": 27490609,
+    "sha256": "eda1fa6dc05d1700af6d7e7246cbed1fa689e95e41df68d1f1487db279b436cc",
+    "filename": "Absz-Dungeon-GO-v0.9.1-Online-ARM64.apk",
+    "url": "https://cdn.abszrpg.shop/downloads/0.9.1/Absz-Dungeon-GO-v0.9.1-Online-ARM64.apk"
   },
   "windows": {
-    "version": 9,
-    "size": 35482029,
-    "sha256": "8b7a22292ce934b6202b68b016b410022b8c40cd05362bda87a9537535041952",
-    "filename": "Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
-    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc3/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
-    "package_revision": "pc3"
+    "version": 10,
+    "size": 35522022,
+    "sha256": "eff2ed3dc172489f966a36f992cea4f44708f0d78db974a93e097cdd64f5f4d7",
+    "filename": "Absz-Dungeon-GO-v0.9.1-Windows-PC.zip",
+    "url": "https://cdn.abszrpg.shop/downloads/0.9.1/Absz-Dungeon-GO-v0.9.1-Windows-PC.zip"
   },
   "windows_exe": {
-    "version": 9,
-    "size": 98526440,
-    "sha256": "a2bdcda5da43dae229048a42d28b203919b4222fe010f4864713953cb1bfe833",
+    "version": 10,
+    "size": 98637864,
+    "sha256": "2b131fa96b504b6b5ee294d977bfab91e04078e47d0d4a9091ecbf6db3653519",
     "filename": "Absz-Dungeon-GO.exe"
   },
   "content": {
-    "size": 22831544,
-    "sha256": "d15718e7de564b1d6ff62c17c01cccd701bdb9cc6a45cf01d9990a0c6878b84b",
-    "version": "0.9.0-r1"
+    "version": "0.9.1-r1",
+    "size": 22831800,
+    "sha256": "296a8892058b5127e8a1320ab2a2bd930fa73e85b3f7081424613c254cc1d775"
   },
-  "checksums": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc3/SHA256SUMS.txt"
+  "checksums": "https://cdn.abszrpg.shop/downloads/0.9.1/SHA256SUMS.txt"
 }

@@ -6,7 +6,7 @@ const release=JSON.parse(read('downloads/release.json')),config=JSON.parse(read(
 test('platform buttons resolve to immutable official releases without displaying SHA-256 in cards',()=>{
  for(const [platform,id]of[['android','android'],['windows','windows']]){
   const file=release[platform];assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(file.size>1000000);
-  assert.equal(new URL(file.url).protocol,'https:');assert.ok(file.url.includes('/game-content/downloads/'+release.version+'/'));
+  assert.equal(new URL(file.url).protocol,'https:');assert.equal(new URL(file.url).hostname,'cdn.abszrpg.shop');assert.ok(new URL(file.url).pathname.startsWith('/downloads/'+release.version+'/'));
   assert.equal(config.redirects.find(r=>r.source==='/downloads/'+platform).destination,file.url);
   assert.ok(html.includes('href="/downloads/'+platform+'"'));
   assert.ok(!html.includes('id="'+id+'-hash"'));

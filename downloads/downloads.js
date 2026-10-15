@@ -15,8 +15,8 @@ function isValidFile(file,version){
   if(!file||!Number.isSafeInteger(file.size)||file.size<1000000||!(/^[a-f0-9]{64}$/.test(file.sha256)))return false;
   try{
     const url=new URL(file.url);
-    return url.protocol==='https:'&&url.hostname==='br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech'
-      &&url.pathname.includes('/game-content/downloads/'+version+'/');
+    return url.protocol==='https:'&&url.hostname==='cdn.abszrpg.shop'
+      &&url.pathname.startsWith('/downloads/'+version+'/');
   }catch{return false;}
 }
 async function populateRelease(){
