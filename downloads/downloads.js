@@ -30,7 +30,6 @@ async function populateRelease(){
     text('current-version','v'+release.version+' Online Alpha');
     for(const platform of ['android','windows']){
       const file=release[platform];
-      text(platform+'-hash',file.sha256);
       text(platform+'-size',formatMB(file.size));
       text(platform+'-size-bar',formatMB(file.size));
       const link=$(platform+'-download');
@@ -82,24 +81,6 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')setMenu(fals
 document.addEventListener('click',event=>{
   if(siteNav.classList.contains('open')&&!siteNav.contains(event.target)&&!toggle.contains(event.target))setMenu(false);
 });
-document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{
-  const field=$(button.dataset.copy);
-  if(!field)return;
-  const hash=field.textContent.trim();
-  try{
-    if(!navigator.clipboard?.writeText)throw new Error('No Clipboard API');
-    await navigator.clipboard.writeText(hash);
-    notify('SHA-256 berjaya disalin.');
-  }catch{
-    field.focus();
-    const range=document.createRange();
-    range.selectNodeContents(field);
-    const selection=window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    notify('Checksum dipilih. Tekan Ctrl+C untuk salin.');
-  }
-}));
 for(const action of document.querySelectorAll('.download-action')){
   action.addEventListener('click',()=>notify('Membuka muat turun rasmi…'));
 }
