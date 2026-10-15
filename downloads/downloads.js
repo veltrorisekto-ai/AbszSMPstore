@@ -13,10 +13,12 @@ function text(id,value){const node=$(id);if(node)node.textContent=value;}
 function formatMB(size){return (size/1e6).toFixed(1)+' MB';}
 function isValidFile(file,version){
   if(!file||!Number.isSafeInteger(file.size)||file.size<1000000||!(/^[a-f0-9]{64}$/.test(file.sha256)))return false;
+  const platformVersion=file.release_version??version;
+  if(typeof platformVersion!=='string'||!(/^\d+\.\d+\.\d+$/.test(platformVersion)))return false;
   try{
     const url=new URL(file.url);
     return url.protocol==='https:'&&url.hostname==='cdn.abszrpg.shop'
-      &&url.pathname.startsWith('/downloads/'+version+'/');
+      &&url.pathname.startsWith('/downloads/'+platformVersion+'/');
   }catch{return false;}
 }
 async function populateRelease(){
@@ -27,6 +29,10 @@ async function populateRelease(){
     if(release.game!=='Absz Dungeon GO!'||!(/^\d+\.\d+\.\d+$/.test(release.version))
       ||!isValidFile(release.android,release.version)||!isValidFile(release.windows,release.version))throw new Error('Invalid release metadata');
     document.querySelectorAll('[data-release-version]').forEach(node=>node.textContent='v'+release.version);
+    document.querySelectorAll('[data-platform-version]').forEach(node=>{
+      const file=release[node.dataset.platformVersion];
+      if(file)node.textContent='v'+(file.release_version??release.version);
+    });
     text('current-version','v'+release.version+' Online Alpha');
     for(const platform of ['android','windows']){
       const file=release[platform];
