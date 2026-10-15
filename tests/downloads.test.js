@@ -22,3 +22,18 @@ test('download page keeps existing routes, scopes security headers and bundles e
  for(const match of html.matchAll(/(?:src|href)="(\/assets\/dungeon\/[^"#]+|\/downloads\/downloads\.(?:css|js))"/g))assert.ok(existsSync(new URL('..'+match[1],import.meta.url)),match[1]);
  assert.ok(!JSON.stringify(release).includes('Source.zip'));assert.ok(!html.includes('release-signing-key'));
 });
+
+test('downloads page uses English for visible labels, instructions, metadata and status feedback',()=>{
+ const script=read('downloads/downloads.js');
+ assert.match(html,/<html lang="en">/);
+ for(const phrase of ['Download APK','Download ZIP','Installation Guide','Frequently Asked Questions','Need help?','Found a Bug?','CONCEPT ART · NOT GAMEPLAY']){
+  assert.ok(html.includes(phrase),phrase);
+ }
+ for(const phrase of ['Unverified','Checking API…'])assert.ok(html.includes(phrase),phrase);
+ for(const phrase of ['Game API reachable','Game API unreachable','Opening official download…','Close navigation']){
+  assert.ok(script.includes(phrase),phrase);
+ }
+ const malay=/\b(?:Muat Turun|Panduan Pemasangan|Soalan Lazim|Belum disahkan|Menyemak API|Sertai Discord kami|Kandungan Sentiasa Baharu|Tutup navigasi|Buka navigasi)\b/i;
+ assert.ok(!malay.test(html));
+ assert.ok(!malay.test(script));
+});
