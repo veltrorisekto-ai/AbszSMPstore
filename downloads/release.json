@@ -12,10 +12,11 @@
   },
   "windows": {
     "version": 9,
-    "size": 35671311,
-    "sha256": "b9906a99b460d1d49bb62c8204bc998a8093b26478deb98973dc3906065061f2",
+    "size": 35670777,
+    "sha256": "f852972dbccfd22a73920cd304518a3f961a6e0364ac96cb62f8ba886aebabc2",
     "filename": "Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
-    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip"
+    "url": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc2/Absz-Dungeon-GO-v0.9.0-Windows-PC.zip",
+    "package_revision": "pc2"
   },
   "windows_exe": {
     "version": 9,
@@ -28,5 +29,5 @@
     "sha256": "d15718e7de564b1d6ff62c17c01cccd701bdb9cc6a45cf01d9990a0c6878b84b",
     "version": "0.9.0-r1"
   },
-  "checksums": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/SHA256SUMS.txt"
+  "checksums": "https://br-summer-cherry-a15duloj.storage.c-1.ap-southeast-1.aws.neon.tech/game-content/downloads/0.9.0/pc2/SHA256SUMS.txt"
 }
