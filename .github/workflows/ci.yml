@@ -34,6 +34,7 @@ jobs:
         run: |
           node --check app.js
           node --check admin-upgrades.js
+          node --check downloads/downloads.js
       - name: Check API syntax
         run: |
           node --check api/_lib.js
@@ -42,3 +43,5 @@ jobs:
           node --check api/admin.js
           node --check api/discord.js
           node --check api/bridge.js
+      - name: Run storefront and downloads regression tests
+        run: node --test tests/*.test.js
