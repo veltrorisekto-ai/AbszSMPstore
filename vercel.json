@@ -75,7 +75,7 @@
   "redirects": [
     {
       "source": "/downloads/android",
-      "destination": "https://cdn.abszrpg.shop/downloads/0.9.1/Absz-Dungeon-GO-v0.9.1-Online-ARM64.apk",
+      "destination": "https://cdn.abszrpg.shop/downloads/0.9.2-r4/Absz-Dungeon-GO-v0.9.2-R4-Online-ARM64.apk",
       "permanent": false
     },
     {
@@ -85,7 +85,7 @@
     },
     {
       "source": "/downloads/checksums",
-      "destination": "https://cdn.abszrpg.shop/downloads/0.9.1/SHA256SUMS.txt",
+      "destination": "/downloads/SHA256SUMS.txt",
       "permanent": false
     }
   ],
@@ -95,7 +95,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' https://br-summer-cherry-a15duloj-game.compute.c-1.ap-southeast-1.aws.neon.tech; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' https://aegis-game.abszrpg.shop https://br-summer-cherry-a15duloj-game.compute.c-1.ap-southeast-1.aws.neon.tech; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "X-Content-Type-Options",

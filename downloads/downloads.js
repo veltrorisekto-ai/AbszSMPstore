@@ -1,6 +1,6 @@
 /* Absz Dungeon GO — reference-inspired Downloads UI. No payment/store state is modified. */
 'use strict';
-const GAME_API='https://br-summer-cherry-a15duloj-game.compute.c-1.ap-southeast-1.aws.neon.tech';
+const GAME_API='https://aegis-game.abszrpg.shop';
 const $=id=>document.getElementById(id);
 const toast=$('feedback');
 let toastTimer;
@@ -13,10 +13,14 @@ function text(id,value){const node=$(id);if(node)node.textContent=value;}
 function formatMB(size){return (size/1e6).toFixed(1)+' MB';}
 function isValidFile(file,version){
   if(!file||!Number.isSafeInteger(file.size)||file.size<1000000||!(/^[a-f0-9]{64}$/.test(file.sha256)))return false;
+  const platformVersion=file.release_version??version;
+  if(typeof platformVersion!=='string'||!(/^\d+\.\d+\.\d+$/.test(platformVersion)))return false;
+  const releasePath=file.release_path??platformVersion;
+  if(typeof releasePath!=='string'||!(new RegExp('^'+platformVersion.replaceAll('.', '\\.')+'(?:-r[1-9][0-9]*)?$')).test(releasePath))return false;
   try{
     const url=new URL(file.url);
     return url.protocol==='https:'&&url.hostname==='cdn.abszrpg.shop'
-      &&url.pathname.startsWith('/downloads/'+version+'/');
+      &&url.pathname.startsWith('/downloads/'+releasePath+'/');
   }catch{return false;}
 }
 async function populateRelease(){
@@ -27,6 +31,10 @@ async function populateRelease(){
     if(release.game!=='Absz Dungeon GO!'||!(/^\d+\.\d+\.\d+$/.test(release.version))
       ||!isValidFile(release.android,release.version)||!isValidFile(release.windows,release.version))throw new Error('Invalid release metadata');
     document.querySelectorAll('[data-release-version]').forEach(node=>node.textContent='v'+release.version);
+    document.querySelectorAll('[data-platform-version]').forEach(node=>{
+      const file=release[node.dataset.platformVersion];
+      if(file)node.textContent='v'+(file.release_version??release.version);
+    });
     text('current-version','v'+release.version+' Online Alpha');
     for(const platform of ['android','windows']){
       const file=release[platform];
@@ -49,7 +57,7 @@ async function checkRealm(){
     const response=await fetch(GAME_API+'/health',{cache:'no-store',signal:controller.signal});
     if(!response.ok)throw new Error('API unavailable');
     const result=await response.json();
-    if(result.game!=='Absz Dungeon GO!'||result.mode!=='online-alpha')throw new Error('Unexpected service');
+    if(result.game!=='Absz Dungeon GO!'||result.server_id!=='aegis'||result.protocol!==5)throw new Error('Unexpected service');
     text('api-status','Game API reachable');
     /* The /health response identifies the API only; it does NOT prove gameplay realm is online.
        Only a dedicated validated multiplayer-health flag can confirm the realm. */
@@ -60,7 +68,7 @@ async function checkRealm(){
       text('realm-status','Offline');
       $('realm-dot').classList.remove('confirmed');
     }else{
-      text('realm-status','Unverified');
+      text('realm-status',result.ready===true?'Aegis ready':'Unverified');
     }
   }catch{
     text('api-status','Game API unreachable');
