@@ -16,6 +16,26 @@
   },
   "rewrites": [
     {
+      "source": "/_channels/android/alpha.json",
+      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/android/alpha.json"
+    },
+    {
+      "source": "/_channels/android/tester.json",
+      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/android/tester.json"
+    },
+    {
+      "source": "/_channels/alpha.json",
+      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/alpha.json"
+    },
+    {
+      "source": "/_channels/tester.json",
+      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/tester.json"
+    },
+    {
+      "source": "/downloads/aegis-status.json",
+      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/status"
+    },
+    {
       "source": "/downloads/credits/",
       "destination": "/downloads/credits/index.html"
     },

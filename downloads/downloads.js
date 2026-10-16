@@ -130,5 +130,20 @@ document.querySelectorAll('[data-lightbox]').forEach(tile=>tile.addEventListener
 dialog.querySelector('.lightbox-close').addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
 dialog.addEventListener('close',()=>dialogImage.removeAttribute('src'));
-populateRelease();
+
+async function populateLiveContent(){
+  try{
+    const r=await fetch('/downloads/aegis-status.json',{cache:'no-store'});
+    if(!r.ok)throw Error('Live content status unavailable');
+    const data=await r.json();
+    const android=data.channels?.android?.alpha,pc=data.channels?.windows?.alpha;
+    const version=p=>typeof p?.version==='string'&&p.signature_verified===true&&/^\d+\.\d+\.\d+(?:[-.][A-Za-z0-9.-]+)?$/.test(p.version)?p.version.match(/^\d+\.\d+\.\d+/)[0]:null;
+    const a=version(android),w=version(pc);
+    if(!a||!w)throw Error('Signed live content could not be verified');
+    text('current-version',a===w?'v'+a+' Online Alpha':'Android v'+a+' · PC v'+w);
+    document.querySelectorAll('[data-release-version]').forEach(node=>node.textContent=a===w?'v'+a:'Android v'+a+' / PC v'+w);
+  }catch(error){console.warn('Live content version could not be refreshed:',error);}
+}
+
+populateRelease().then(populateLiveContent);
 checkRealm();
