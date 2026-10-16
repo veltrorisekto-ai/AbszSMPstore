@@ -1,6 +1,6 @@
 {
   "game": "Absz Dungeon GO!",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "channel": "online-alpha",
   "released": "2026-10-16",
   "android": {
@@ -12,9 +12,9 @@
     "release_version": "0.9.2",
     "release_path": "0.9.2-r4",
     "content": {
-      "version": "0.10.1-aegis-r1",
-      "size": 37108084,
-      "sha256": "37fb3481f66199188f852916b81e44cbe02cc9b430f2765ae9503da0f2fc89af"
+      "version": "0.10.2-weapon-skills-r1",
+      "size": 37435144,
+      "sha256": "cc5ec11de3c4557f14a7dc10747a98afd864faa34b838d24a32f6e5da6a5eba4"
     }
   },
   "windows": {
@@ -25,9 +25,9 @@
     "url": "https://cdn.abszrpg.shop/downloads/0.9.1/Absz-Dungeon-GO-v0.9.1-Windows-PC.zip",
     "release_version": "0.9.1",
     "content": {
-      "version": "0.10.1-aegis-r1",
-      "size": 37108084,
-      "sha256": "37fb3481f66199188f852916b81e44cbe02cc9b430f2765ae9503da0f2fc89af"
+      "version": "0.10.2-weapon-skills-r1",
+      "size": 37435144,
+      "sha256": "cc5ec11de3c4557f14a7dc10747a98afd864faa34b838d24a32f6e5da6a5eba4"
     }
   },
   "windows_exe": {
@@ -38,9 +38,9 @@
     "release_version": "0.9.1"
   },
   "content": {
-    "version": "0.10.1-aegis-r1",
-    "size": 37108084,
-    "sha256": "37fb3481f66199188f852916b81e44cbe02cc9b430f2765ae9503da0f2fc89af"
+    "version": "0.10.2-weapon-skills-r1",
+    "size": 37435144,
+    "sha256": "cc5ec11de3c4557f14a7dc10747a98afd864faa34b838d24a32f6e5da6a5eba4"
   },
   "checksums": "https://abszrpg.shop/downloads/SHA256SUMS.txt",
   "server": {
