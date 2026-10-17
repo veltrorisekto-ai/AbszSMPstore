@@ -1,6 +1,6 @@
 {
   "game": "Absz Dungeon GO!",
-  "version": "0.11.0",
+  "version": "0.11.4",
   "channel": "online-alpha",
   "released": "2026-10-17",
   "android": {
@@ -12,9 +12,9 @@
     "release_version": "0.9.2",
     "release_path": "0.9.2-r4",
     "content": {
-      "version": "0.11.0-combat-body-audio-r4",
-      "size": 41049956,
-      "sha256": "448105474d4833d1217eae036d646e982790848f60477a8785940535cb234466"
+      "version": "0.11.4-body-ground-r5",
+      "size": 137059572,
+      "sha256": "e51cc764582905f5ed76dfdda798f475fb4c24cc9c815bda42e813b18f4a30d9"
     }
   },
   "windows": {
@@ -25,9 +25,9 @@
     "url": "https://cdn.abszrpg.shop/downloads/0.9.1/Absz-Dungeon-GO-v0.9.1-Windows-PC.zip",
     "release_version": "0.9.1",
     "content": {
-      "version": "0.11.0-combat-body-audio-r4",
-      "size": 41049956,
-      "sha256": "448105474d4833d1217eae036d646e982790848f60477a8785940535cb234466"
+      "version": "0.11.4-body-ground-r5",
+      "size": 137059572,
+      "sha256": "e51cc764582905f5ed76dfdda798f475fb4c24cc9c815bda42e813b18f4a30d9"
     }
   },
   "windows_exe": {
@@ -38,9 +38,9 @@
     "release_version": "0.9.1"
   },
   "content": {
-    "version": "0.11.0-combat-body-audio-r4",
-    "size": 41049956,
-    "sha256": "448105474d4833d1217eae036d646e982790848f60477a8785940535cb234466"
+    "version": "0.11.4-body-ground-r5",
+    "size": 137059572,
+    "sha256": "e51cc764582905f5ed76dfdda798f475fb4c24cc9c815bda42e813b18f4a30d9"
   },
   "checksums": "https://abszrpg.shop/downloads/SHA256SUMS.txt",
   "server": {
