@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "game": "My Hero Clash With Monster",
+  "applicationId": "shop.absz.heroclash.mobile",
+  "version": "0.4.1",
+  "versionCode": 7,
+  "channel": "public_beta",
+  "apk": {
+    "filename": "My-Hero-Clash-With-Monster-0.4.1-Public-Beta.apk",
+    "url": "https://hero-cdn.abszsmp.my.id/releases/android/0.4.1/My-Hero-Clash-With-Monster-0.4.1-Public-Beta.apk",
+    "bytes": 2820147,
+    "sha256": "a6133687377f0a233b00c573f66037c595df137922de293a0bf5cbb1d4a510a5",
+    "certificateSha256": "03de1feb4d783d0e07c74229a9b064ddb5d5516f7a7aca981b59c2562d59d2cb"
+  },
+  "resources": {
+    "manifestUrl": "https://hero-cdn.abszsmp.my.id/manifests/resources-v1.json",
+    "downloadBytes": 74179017,
+    "extractedBytes": 220017826
+  },
+  "android": {
+    "minSdk": 26,
+    "targetSdk": 35,
+    "permissions": [
+      "android.permission.INTERNET"
+    ]
+  },
+  "verification": {
+    "signatureVerified": true,
+    "resourcesVerified": true,
+    "debuggable": false,
+    "physicalDeviceTested": false,
+    "physicalQaSkippedByOwner": true,
+    "playProtectCleared": false
+  }
+}

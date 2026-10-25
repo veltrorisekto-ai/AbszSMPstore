@@ -11,19 +11,26 @@ test('home download links now lead to our games without breaking Dungeon GO down
   assert.match(downloads,/href="\/downloads\/windows"/);
   assert.match(downloads,/href="\/games\/">All Games/);
 });
-test('the catalogue includes six games, with only Dungeon GO marked available',()=>{
+test('the catalogue includes six games, with Dungeon GO and Hero Clash marked available',()=>{
   const html=read('games/index.html');
-  for(const name of ['ABSZ Dungeon GO!','My Monster and Dungeon','My Hero Clash With Monsters','Please Defend Our King!','Community & Friendship','DungeonCraft Online']) assert.ok(html.includes(name),name);
+  for(const name of ['ABSZ Dungeon GO!','My Monster and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online']) assert.ok(html.includes(name),name);
   assert.equal((html.match(/class="game-card /g)||[]).length,6);
-  assert.equal((html.match(/status-live/g)||[]).length,1);
+  assert.equal((html.match(/status-live/g)||[]).length,2);
   assert.match(html,/href="\/downloads\/"/);
 });
 test('unreleased games have routed detail pages rather than broken download URLs',()=>{
   const html=read('games/index.html'), js=read('games/detail.js'), routes=JSON.parse(read('vercel.json')).rewrites;
-  for(const slug of ['my-monster-and-dungeon','my-hero-clash-with-monsters','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
+  for(const slug of ['my-monster-and-dungeon','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
     assert.ok(html.includes('/games/'+slug+'/'),slug);
     assert.ok(js.includes("'"+slug+"'"),slug);
   }
   assert.ok(routes.some(r=>r.source==='/games/'&&r.destination==='/games/index.html'));
   assert.ok(routes.some(r=>r.source==='/games/:slug/'&&r.destination==='/games/detail.html'));
+});
+test('Hero Clash has a dedicated download route before the generic coming-soon route',()=>{const routes=JSON.parse(read('vercel.json')).rewrites;const hero=routes.findIndex(r=>r.source==='/games/my-hero-clash-with-monsters/');const generic=routes.findIndex(r=>r.source==='/games/:slug/');assert.ok(hero>=0&&hero<generic);assert.equal(routes[hero].destination,'/hero-clash/index.html');const html=read('hero-clash/index.html');assert.ok(html.includes('/downloads/hero-clash/android'));assert.ok(html.includes('/hero-clash/privacy.html'));assert.ok(html.includes('Physical two-phone testing'));assert.ok(html.includes('Play Protect review has not yet been completed'));});
+test('Hero Clash release metadata describes the verified public APK and resource sizes',()=>{
+ const r=JSON.parse(read('hero-clash/release.json')), cfg=JSON.parse(read('vercel.json'));
+ assert.equal(r.applicationId,'shop.absz.heroclash.mobile');assert.equal(r.version,'0.4.1');assert.equal(r.versionCode,7);assert.equal(r.channel,'public_beta');
+ const redirect=cfg.redirects.find(x=>x.source==='/downloads/hero-clash/android');assert.equal(redirect.destination,r.apk.url);assert.match(r.apk.sha256,/^[a-f0-9]{64}$/);assert.ok(r.apk.bytes>1000000);assert.equal(read('hero-clash/SHA256SUMS.txt').trim(),r.apk.sha256+'  '+r.apk.filename);
+ assert.equal(r.verification.signatureVerified,true);assert.equal(r.verification.debuggable,false);assert.equal(r.verification.playProtectCleared,false);assert.equal(r.verification.physicalDeviceTested,false);assert.deepEqual(r.android.permissions,['android.permission.INTERNET']);assert.equal(r.resources.downloadBytes,74179017);
 });
