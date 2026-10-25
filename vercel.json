@@ -208,7 +208,7 @@
       ]
     },
     {
-      "source": "/games/my-hero-clash-with-monsters/:path*",
+      "source": "/games/my-hero-clash-with-monsters/",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -234,6 +234,27 @@
         {
           "key": "Cache-Control",
           "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/games/my-hero-clash-with-monsters",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }
