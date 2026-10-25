@@ -1,0 +1,91 @@
+@font-face{font-family:AbszSerif;src:url('/assets/dungeon/heading.woff') format('woff');font-weight:700;font-display:swap}
+:root{color-scheme:dark;--bg:#040918;--ink:#e8f1ff;--muted:#a8b8d2;--line:#284065;--cyan:#31d8f8;--gold:#ffd98d}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px;background:radial-gradient(ellipse at 75% 5%,#132349 0,transparent 40%),radial-gradient(ellipse at 15% 55%,#121332 0,transparent 50%),#040916;color:var(--ink);font:15px/1.55 'Segoe UI',Arial,sans-serif}
+a{color:inherit;text-decoration:none}a:focus-visible{outline:2px solid #53e4ff;outline-offset:4px}
+.shell{width:min(1220px,calc(100% - 56px));margin:auto}
+.skip-link{position:fixed;left:20px;top:-100px;z-index:200;background:#fff;color:#010a1b;padding:9px 15px}.skip-link:focus{top:12px}
+.site-header{height:76px;background:#040b1bec;border-bottom:1px solid #29426b77;position:relative;z-index:2;backdrop-filter:blur(10px)}
+.header-inner{max-width:1380px;padding:0 34px;height:100%;margin:auto;display:flex;align-items:center;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap;font:700 25px/1 AbszSerif,Georgia,serif}
+.brand img{object-fit:contain;filter:drop-shadow(0 0 10px #278bfc88)}
+.brand b{color:#b1d9ff}
+.site-nav{display:flex;gap:29px;align-items:center;justify-content:center;margin:auto;align-self:stretch}
+.site-nav a{display:flex;align-items:center;color:#b9c9e1;font-size:12px;white-space:nowrap;position:relative}
+.site-nav a:hover,.site-nav a.active{color:white}
+.site-nav a.active:after{content:'';position:absolute;left:0;right:0;bottom:12px;height:2px;background:#3bdaef;box-shadow:0 0 12px #29dcff}
+.nav-cta,.button{display:inline-flex;align-items:center;justify-content:center;gap:12px;font-size:13px;font-weight:750;border-radius:12px;white-space:nowrap}
+.nav-cta{border:1px solid #517ff8;background:#172c67;color:white;padding:12px 15px}
+.hero{min-height:590px;position:relative;isolation:isolate;display:flex;align-items:center;overflow:hidden;background:linear-gradient(90deg,#040a19 0%,#040a19e8 36%,#07122484 70%,#060c19a1 100%),linear-gradient(180deg,#09132914,#040917 100%),url('/assets/dungeon/adventure.webp') center 32%/cover no-repeat}
+.hero:after{content:'';position:absolute;inset:auto 0 0;height:130px;background:linear-gradient(0deg,#040916,transparent);z-index:-1}
+.hero-glow{position:absolute;right:13%;top:12%;width:300px;height:300px;border-radius:50%;background:#42bfff24;filter:blur(90px);z-index:-1}
+.hero-content{width:min(1220px,calc(100% - 56px));margin:0 auto;padding:65px 0 94px}
+.eyebrow,.section-kicker{font-size:11px;letter-spacing:3px;font-weight:800;color:#73ddf2}
+.spark{color:#ffda8a;font-size:20px;margin-right:7px}
+.hero h1{font:700 clamp(63px,10vw,125px)/.94 AbszSerif,Georgia,serif;letter-spacing:-2.4px;margin:22px 0 23px;text-shadow:0 5px 40px #030916}
+.hero h1 span{background:linear-gradient(110deg,#fff1ad,#f8b755,#fff1ad);color:transparent;background-clip:text}
+.hero-content>p{font-size:17px;line-height:1.8;color:#d9e7fb;max-width:480px;margin:0}
+.hero-actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:30px}
+.button{padding:14px 22px;min-height:49px;transition:transform .2s,background .2s}
+.button:hover,.nav-cta:hover{transform:translateY(-2px);filter:brightness(1.13)}
+.button.primary{background:linear-gradient(130deg,#279dd3,#154fb3);box-shadow:0 8px 28px #196be34d;border:1px solid #50bcf0}
+.button.secondary{border:1px solid #55759d;background:#0a1835c9;color:#e2ebfa}
+.hero-count{display:flex;align-items:center;gap:13px;margin-top:39px}
+.hero-count strong{font:700 34px AbszSerif,Georgia,serif;color:#e9f8ff}
+.hero-count span{font-size:11px;line-height:1.4;color:#b6cde9;letter-spacing:.3px}
+.hero-count i{height:32px;width:1px;background:#46658f;margin:0 18px}
+.catalogue{padding:25px 0 95px}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:22px 0 30px}
+.section-heading h2,.next-chapter h2{font:700 clamp(27px,3.6vw,40px)/1.25 AbszSerif,Georgia,serif;margin:9px 0 6px}
+.section-heading p,.next-chapter p{color:var(--muted);margin:0}
+.catalogue-label{white-space:nowrap;font-size:10px;font-weight:800;letter-spacing:1.3px;color:#c3d4ec;border:1px solid #405579;border-radius:99px;padding:9px 15px}
+.games-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.game-card{min-width:0;overflow:hidden;background:linear-gradient(160deg,#101d3a,#080f21 77%);border:1px solid #364b72;border-radius:20px;box-shadow:0 20px 40px #0004;transition:transform .24s,border-color .24s,box-shadow .24s}
+.game-card:hover{transform:translateY(-6px);border-color:#80bdff;box-shadow:0 26px 58px #031324aa}
+.card-art{height:197px;position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 55% 48%,#266ac877,#0b1536 52%,#0a1027)}
+.card-art:before,.card-art:after{content:'';position:absolute;inset:0;pointer-events:none}
+.card-art:before{background:repeating-linear-gradient(115deg,transparent 0 31px,#ffffff09 32px 33px);opacity:.4}
+.card-art:after{background:linear-gradient(0deg,#0b1021 0%,transparent 55%)}
+.game-emblem{z-index:1;display:grid;place-items:center;width:118px;height:118px;border-radius:34px;border:1px solid #a5d4ff7e;background:linear-gradient(155deg,#607bbc28,#030d3488);font:700 66px AbszSerif,Georgia,serif;color:#f9e0a5;text-shadow:0 0 30px #e3a63899;box-shadow:0 10px 45px #0008,0 0 50px #63c3ff55;transform:rotate(-6deg)}
+.world-line{position:absolute;width:300px;height:300px;border:1px solid #a3c1ff24;border-radius:50%;transform:scaleX(1.7)}
+.game-card.dungeon .card-art{background:linear-gradient(0deg,#0914298c,#07152a42),url('/assets/dungeon/adventure.webp') center/cover}
+.game-card.dungeon .game-emblem{box-shadow:0 10px 45px #000a,0 0 50px #fabb6355}
+.monsters .card-art{background:radial-gradient(circle at 50% 65%,#4baf8580,#122a33 53%,#091424)}
+.hero .card-art{background:radial-gradient(circle at 52% 64%,#a5457d8c,#3d2149 52%,#101026)}
+.king .card-art{background:radial-gradient(circle at 50% 52%,#e7aa3977,#472d38 53%,#170d1f)}
+.friends .card-art{background:radial-gradient(circle at 52% 65%,#7472ff80,#26395d 56%,#111533)}
+.craft .card-art{background:radial-gradient(circle at 50% 50%,#1c93917d,#113d4e 55%,#071929)}
+.card-content{padding:20px 22px 19px}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.game-genre{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:#98c4ef;font-weight:800}
+.status{white-space:nowrap;font-size:9px;letter-spacing:.7px;font-weight:850;border-radius:99px;padding:6px 9px}
+.status-live{color:#9bffcd;background:#0b593879;border:1px solid #2ecf7b77}
+.status-soon{color:#f1c984;background:#69431648;border:1px solid #aa823a77}
+.card-content h3{font:700 24px/1.2 AbszSerif,Georgia,serif;min-height:58px;margin:17px 0 5px}
+.card-content p{font-size:13px;color:#afc1dc;min-height:61px;margin:0 0 22px}
+.card-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #344b6d;padding-top:17px;font-size:11px;color:#91a8c7}
+.card-bottom strong{font-size:12px;color:#f0d8a2;white-space:nowrap}
+.card-bottom strong span{font-size:16px;margin-left:2px}
+.next-chapter{margin-bottom:90px;border:1px solid #375577;border-radius:19px;padding:28px 35px;display:flex;align-items:center;gap:25px;background:radial-gradient(circle at 10% 20%,#183e5e94,transparent 45%),linear-gradient(125deg,#0d2237,#0a1227)}
+.next-icon{font-size:43px;color:#f5d699}.next-chapter>div{flex:1}.next-chapter p{font-size:13px}
+.site-footer{background:#040a17;border-top:1px solid #233754;padding:30px 0 40px}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.footer-brand{font:700 24px AbszSerif,Georgia,serif}.footer-brand span{color:#9ed9ff}
+.site-footer p,.site-footer small{font-size:11px;color:#8fa6c9;margin:4px 0}
+.site-footer nav{display:flex;gap:19px;flex-wrap:wrap;font-size:12px;color:#c8d6ed}
+.site-footer nav a:hover{color:white}
+.detail-view{min-height:calc(100vh - 220px);padding:75px 0 110px}
+.breadcrumb{display:inline-block;color:#7fd8f5;font-size:12px;font-weight:700;margin-bottom:22px}
+.detail-panel{border:1px solid #3e5682;border-radius:24px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;background:linear-gradient(135deg,#0c1c34,#070d20)}
+.detail-visual{min-height:400px;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,#4a4a9990,transparent 60%),radial-gradient(circle at 70% 80%,#286c897a,transparent 70%),#0b152b;position:relative}
+.detail-visual:after{content:'ABSZ GAME UNIVERSE';position:absolute;bottom:20px;left:22px;font-size:10px;letter-spacing:4px;color:#b7cbea}
+.detail-emblem{font:700 120px AbszSerif,Georgia,serif;color:#ffe5af;text-shadow:0 0 45px #be95e9}
+.detail-copy{padding:49px 43px}
+.detail-copy h1{font:700 clamp(36px,4.4vw,62px)/1.1 AbszSerif,Georgia,serif;margin:18px 0}
+.detail-copy>p{color:#b7c9e3;line-height:1.8;margin-bottom:24px}
+.notice{border:1px solid #79683b;padding:15px 18px;color:#f0d9a0;background:#55451c38;border-radius:12px;margin:22px 0}
+.detail-back{margin-top:15px;display:inline-block;color:#a0d4f7;font-size:13px}
+@media(max-width:1020px){.site-nav{gap:14px}.nav-cta{display:none}.games-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.site-header{height:auto}.header-inner{padding:13px 19px;flex-wrap:wrap;justify-content:center;gap:12px}.brand{font-size:23px}.site-nav{width:100%;justify-content:center;flex-wrap:wrap;gap:14px 18px}.site-nav a{font-size:11px}.site-nav .active:after{bottom:-4px}.hero{min-height:530px;background-position:62% center}.hero-content,.shell{width:calc(100% - 36px)}.hero-content{padding:57px 0 85px}.hero h1{font-size:clamp(54px,12vw,76px)}.hero-content>p{font-size:14px}.hero-count{margin-top:29px}.section-heading{align-items:flex-start;flex-direction:column}.games-grid{grid-template-columns:1fr;gap:16px}.card-art{height:170px}.card-content h3{min-height:0}.card-content p{min-height:0}.next-chapter{padding:24px;align-items:flex-start;flex-direction:column;gap:12px}.footer-inner{align-items:flex-start;flex-direction:column}.detail-view{padding:40px 0 70px}.detail-panel{grid-template-columns:1fr}.detail-visual{min-height:240px}.detail-emblem{font-size:88px}.detail-copy{padding:30px 25px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.game-card,.button{transition:none}}

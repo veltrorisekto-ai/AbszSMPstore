@@ -36,6 +36,22 @@
       "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/status"
     },
     {
+      "source": "/games",
+      "destination": "/games/index.html"
+    },
+    {
+      "source": "/games/",
+      "destination": "/games/index.html"
+    },
+    {
+      "source": "/games/:slug",
+      "destination": "/games/detail.html"
+    },
+    {
+      "source": "/games/:slug/",
+      "destination": "/games/detail.html"
+    },
+    {
       "source": "/downloads/credits/",
       "destination": "/downloads/credits/index.html"
     },
