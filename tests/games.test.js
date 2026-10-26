@@ -48,3 +48,22 @@ test('mobile game catalogue keeps six playable links but prevents Hero Clash her
  assert.match(heroCss,/\.hc-page \.nav-cta\{display:none\}/);
  assert.match(heroCss,/\.hc-art\{order:1;flex:0 0 auto;height:clamp\(175px,53vw,255px\)/);
 });
+
+test('real screenshots form a swipable and keyboard-accessible gallery without changing the Android installer',async()=>{
+ const page=read('hero-clash/index.html'), script=read('hero-clash/gallery.js'), css=read('hero-clash/style.css'), v=JSON.parse(read('vercel.json'));
+ assert.match(page,/id="gameplay"/);
+ assert.match(page,/id="hc-gallery-rail"/);
+ assert.match(page,/id="hc-gallery-dialog"/);
+ assert.match(page,/View real gameplay/);
+ assert.equal((page.match(/class="hc-gallery-slide"/g)||[]).length,19);
+ assert.equal((page.match(/class="hc-gallery-thumb"/g)||[]).length,19);
+ assert.ok(page.includes('/downloads/hero-clash/android'));
+ assert.equal(v.redirects.find(x=>x.source==='/downloads/hero-clash/android').destination,JSON.parse(read('hero-clash/release.json')).apk.url);
+ assert.match(css,/scroll-snap-type:x mandatory/);
+ assert.match(script,/touchstart/);
+ assert.match(script,/ArrowLeft/);
+ new (await import('node:vm')).Script(script);
+ for(const x of page.matchAll(/src="(\/assets\/hero-clash\/gameplay\/[^"]+\.webp)"/g)) {
+   assert.ok((await import('node:fs')).existsSync(new URL('..'+x[1],import.meta.url)),x[1]);
+ }
+});
