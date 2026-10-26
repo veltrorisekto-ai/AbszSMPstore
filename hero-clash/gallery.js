@@ -35,7 +35,7 @@
     count.textContent = (current + 1) + ' / ' + visible.length;
     if (shouldScroll) {
       const target = currentSlide();
-      const left = target.offsetLeft - rail.offsetLeft - (rail.clientWidth - target.clientWidth) / 2;
+      const left = target.offsetLeft - (rail.clientWidth - target.clientWidth) / 2;
       rail.scrollTo({left: Math.max(0, left), behavior: reduceMotion ? 'instant' : 'smooth'});
       const currentThumb = thumbs[Number(target.dataset.index)];
       const thumbRail = document.querySelector('#hc-gallery-thumbnails');
