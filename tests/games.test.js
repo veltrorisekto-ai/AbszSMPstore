@@ -84,3 +84,14 @@ test('new players see the 19-shot interactive real gameplay carousel first, befo
  assert.match(style,/grid-template-areas:"download" "aside"/);
  assert.ok(page.includes('href="/downloads/hero-clash/android"'));
 });
+
+test('desktop real gameplay gallery fills the page instead of starting with a huge empty left gutter',()=>{
+ const css=read('hero-clash/style.css'),html=read('hero-clash/index.html');
+ assert.match(css,/@media \(min-width:761px\)/);
+ assert.match(css,/\.hc-gameplay \.hc-gallery-rail\{[\s\S]*?padding:14px 0 20px;[\s\S]*?scroll-padding-inline:0/);
+ assert.match(css,/\.hc-gameplay \.hc-gallery-slide\{[\s\S]*?flex:0 0 calc\(\(100% - 32px\)\/3\)/);
+ assert.match(css,/@media \(min-width:1200px\)\{[\s\S]*?flex-basis:calc\(\(100% - 48px\)\/4\)/);
+ assert.match(css,/@media\(max-width:760px\)[\s\S]*?\.hc-gallery-rail\{gap:11px;padding:10px 11vw 14px/);
+ assert.equal((html.match(/class="hc-gallery-slide"/g)||[]).length,19);
+ assert.match(html,/href="\/downloads\/hero-clash\/android"/);
+});

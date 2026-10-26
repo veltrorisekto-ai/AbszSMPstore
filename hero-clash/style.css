@@ -160,3 +160,38 @@
     padding:19px 5px 0;
   }
 }
+
+/* Desktop gallery correction: fill the content width instead of centering
+   the first card behind a half-width internal gutter. Keep mobile swipe
+   presentation unchanged. */
+@media (min-width:761px){
+  .hc-page main > .hc-gameplay{
+    max-width:1220px;
+  }
+  .hc-gameplay .hc-gallery-rail{
+    width:100%;
+    max-width:100%;
+    padding:14px 0 20px;
+    scroll-padding-inline:0;
+    gap:16px;
+  }
+  .hc-gameplay .hc-gallery-slide{
+    flex:0 0 calc((100% - 32px)/3);
+    scroll-snap-align:start;
+    max-width:none;
+  }
+  .hc-gameplay .hc-gallery-slide .hc-gallery-image img{
+    width:100%;
+    aspect-ratio:709/1536;
+  }
+  .hc-gameplay .hc-gallery-heading,
+  .hc-gameplay .hc-gallery-filters,
+  .hc-gameplay .hc-gallery-thumbnails{
+    max-width:100%;
+  }
+}
+@media (min-width:1200px){
+  .hc-gameplay .hc-gallery-slide{
+    flex-basis:calc((100% - 48px)/4);
+  }
+}
