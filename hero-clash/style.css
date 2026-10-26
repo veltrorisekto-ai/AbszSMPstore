@@ -103,3 +103,39 @@
  .hc-gallery-modal-arrow{width:31px;height:36px;flex-basis:31px}
 }
 @media(prefers-reduced-motion:reduce){.hc-gallery-slide,.hc-gallery-thumb,.hc-gallery-actions button{transition:none}}
+
+/* Keep real gameplay immediately after the APK card on phones.
+   On desktop keep the first-launch tips beside the download card. */
+.hc-download{
+  grid-template-areas:"download aside" "gallery gallery";
+  column-gap:38px;
+  row-gap:14px;
+}
+.hc-download > .hc-download-card{grid-area:download;min-width:0}
+.hc-download > .hc-first-launch{grid-area:aside;min-width:0}
+.hc-download > .hc-gameplay{
+  grid-area:gallery;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:27px 0 30px;
+}
+@media(max-width:1000px) and (min-width:761px){
+  .hc-download{column-gap:26px}
+}
+@media(max-width:760px){
+  .hc-download{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"download" "gallery" "aside";
+    row-gap:11px;
+    margin-bottom:37px;
+  }
+  .hc-download > .hc-gameplay{
+    margin:0;
+    padding:23px 0 20px;
+  }
+  .hc-download > .hc-first-launch{
+    padding:19px 5px 0;
+  }
+}

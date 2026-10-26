@@ -67,3 +67,17 @@ test('real screenshots form a swipable and keyboard-accessible gallery without c
    assert.ok((await import('node:fs')).existsSync(new URL('..'+x[1],import.meta.url)),x[1]);
  }
 });
+
+test('public beta shows real gameplay directly below the download card before install tips on mobile',()=>{
+ const page=read('hero-clash/index.html'), style=read('hero-clash/style.css');
+ const download=page.indexOf('id="apk-download"');
+ const gameplay=page.indexOf('id="gameplay"');
+ const tips=page.indexOf('class="hc-first-launch"');
+ const features=page.indexOf('id="adventure"');
+ assert.ok(download>=0&&download<gameplay&&gameplay<tips&&tips<features);
+ assert.equal((page.match(/id="gameplay"/g)||[]).length,1);
+ assert.equal((page.match(/class="hc-gallery-slide"/g)||[]).length,19);
+ assert.match(style,/grid-template-areas:"download" "gallery" "aside"/);
+ assert.match(style,/\.hc-download > \.hc-gameplay\{/);
+ assert.ok(page.includes('href="/downloads/hero-clash/android"'));
+});
