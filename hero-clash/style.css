@@ -3,3 +3,38 @@
 @media(max-width:1000px){.hc-hero{min-height:700px}.hc-art{height:700px;margin-right:0}.hc-copy h1{font-size:65px}.hc-copy h2{font-size:17px}.hc-features{grid-template-columns:1fr 1fr;gap:32px}.hc-download{gap:26px}.hc-start,.hc-faq{gap:35px}.hc-community{flex-wrap:wrap}.hc-community .hc-button{margin-left:100px}.hc-community>div{flex-basis:calc(100% - 110px)}}
 @media(max-width:680px){.hc-page .shell{width:calc(100% - 36px)}.hc-hero{display:flex;flex-direction:column;min-height:0;align-items:stretch}.hc-copy{order:2;padding:0 0 40px}.hc-copy h1{font-size:clamp(44px,13.8vw,65px)}.hc-art{order:1;height:390px;margin:0 -18px -55px;mask-image:linear-gradient(180deg,black 76%,transparent);mask-composite:add}.hc-art img{object-position:50% 21%}.hc-art figcaption{font-size:9px;left:18px;bottom:60px}.hc-back{margin:0 0 15px}.hc-copy .hc-eyebrow{font-size:9px;margin:0 0 15px}.hc-copy h2{font-size:19px}.hc-intro{font-size:16px}.hc-actions{gap:10px;margin-top:22px}.hc-actions .hc-button{padding:14px 18px;font-size:12px;flex:1;gap:10px}.hc-hero-facts{font-size:10px;gap:9px 14px}.hc-download{grid-template-columns:1fr;gap:15px;margin-top:0;margin-bottom:55px}.hc-download-card{padding:23px 19px}.hc-build-title{gap:12px}.hc-build-title img{width:58px;height:58px}.hc-build-title h2{font-size:23px}.hc-build-title .hc-eyebrow{font-size:8px}.hc-download-details{font-size:10px}.hc-first-launch{padding:18px 5px}.hc-first-launch h3{font-size:29px}.hc-first-launch>p{max-width:none}.hc-pack-fact{margin:18px 0}.hc-features{grid-template-columns:1fr;gap:22px;padding-bottom:45px}.hc-section-title{margin-bottom:10px}.hc-section-title h2{font-size:34px}.hc-features h3{margin:12px 0 8px}.hc-features article p{margin:0;font-size:13px}.hc-start,.hc-faq{grid-template-columns:1fr;gap:30px;padding:45px 0}.hc-start ol{grid-template-columns:1fr;gap:23px}.hc-start li{padding-left:38px}.hc-start li p{font-size:13px}.hc-faq{gap:18px}.hc-questions summary{font-size:13px}.hc-community{padding:23px 19px;gap:15px;margin-bottom:45px}.hc-community img{width:56px;height:56px}.hc-community>div{flex-basis:calc(100% - 80px)}.hc-community h2{font-size:21px}.hc-community .hc-button{margin:5px 0 0;width:100%}.hc-community .hc-eyebrow{font-size:8px}.hc-prose h1{font-size:34px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.hc-button{transition:none}.hc-button:hover{transform:none}}
+
+/* Mobile Hero Clash: header button is already present inside the page.
+   Hide the duplicate banner CTA, bring title/installation action above the fold. */
+@media(max-width:1020px){
+  .hc-page .nav-cta{display:none}
+}
+@media(max-width:760px){
+  .hc-page .site-header{height:auto}
+  .hc-page .shell{width:calc(100% - 36px)}
+  .hc-hero{display:flex;flex-direction:column;align-items:stretch;min-height:0}
+  .hc-art{order:1;flex:0 0 auto;height:clamp(175px,53vw,255px);margin:0 -18px 7px;overflow:hidden;mask-image:linear-gradient(180deg,black 77%,transparent);mask-composite:add}
+  .hc-art img{height:100%;width:100%;object-fit:cover;object-position:center 23%}
+  .hc-art figcaption{bottom:23px;left:13px;font-size:9px;padding:4px 8px}
+  .hc-copy{order:2;padding:0 0 27px}
+  .hc-back{margin:0 0 9px;min-height:32px;font-size:12px}
+  .hc-copy .hc-eyebrow{font-size:9px;letter-spacing:.1em;margin:0 0 10px}
+  .hc-copy h1{font-size:clamp(36px,10.3vw,50px);line-height:1.02;margin:0 0 13px}
+  .hc-copy h2{font-size:17px;line-height:1.3;margin:0 0 9px}
+  .hc-intro{font-size:14px;line-height:1.5;margin:0}
+  .hc-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0}
+  .hc-actions .hc-button{min-width:0;min-height:45px;white-space:normal;text-align:center;line-height:1.3;font-size:11px;padding:10px 9px;gap:6px}
+  .hc-hero-facts{font-size:10px;gap:7px 11px}
+  .hc-orb{max-width:70vw;width:240px;height:240px;right:0;top:15%}
+  .hc-download{margin-top:0;margin-bottom:43px;gap:11px}
+  .hc-download-card{padding:21px 17px}
+  .hc-build-title h2{font-size:22px}
+  .hc-download-button{min-height:50px}
+  .hc-first-launch{padding:15px 3px}
+  .hc-start,.hc-faq{padding:40px 0}
+  .hc-features{padding-bottom:40px}
+}
+@media(max-width:360px){
+  .hc-copy h1{font-size:34px}
+  .hc-actions .hc-button{font-size:10px}
+}

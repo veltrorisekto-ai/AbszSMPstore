@@ -34,3 +34,17 @@ test('Hero Clash release metadata describes the verified public APK and resource
  const redirect=cfg.redirects.find(x=>x.source==='/downloads/hero-clash/android');assert.equal(redirect.destination,r.apk.url);assert.match(r.apk.sha256,/^[a-f0-9]{64}$/);assert.ok(r.apk.bytes>1000000);assert.equal(read('hero-clash/SHA256SUMS.txt').trim(),r.apk.sha256+'  '+r.apk.filename);
  assert.equal(r.verification.signatureVerified,true);assert.equal(r.verification.debuggable,false);assert.equal(r.verification.playProtectCleared,false);assert.equal(r.verification.physicalDeviceTested,false);assert.deepEqual(r.android.permissions,['android.permission.INTERNET']);assert.equal(r.resources.downloadBytes,74179017);for(const path of ['/games/my-hero-clash-with-monsters','/games/my-hero-clash-with-monsters/'])assert.ok(cfg.headers.some(h=>h.source===path&&h.headers.some(v=>v.key==='Content-Security-Policy')));
 });
+
+test('mobile game catalogue keeps six playable links but prevents Hero Clash hero-layout collision',()=>{
+ const html=read('games/index.html'), css=read('games/games.css'), heroCss=read('hero-clash/style.css');
+ assert.match(html,/class="game-card hero-game featured"/);
+ assert.doesNotMatch(html,/class="game-card hero featured"/);
+ assert.match(css,/\.game-card\.hero-game \.hero-live-art/);
+ assert.match(css,/\.hero-game \.card-art/);
+ assert.match(css,/\.site-nav\{display:flex;align-self:auto;flex-wrap:nowrap/);
+ assert.match(css,/\.site-nav a\.active\{order:-1/);
+ assert.match(css,/\.games-grid\{grid-template-columns:1fr/);
+ assert.match(css,/\.game-card\{display:block;min-height:0/);
+ assert.match(heroCss,/\.hc-page \.nav-cta\{display:none\}/);
+ assert.match(heroCss,/\.hc-art\{order:1;flex:0 0 auto;height:clamp\(175px,53vw,255px\)/);
+});
