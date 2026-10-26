@@ -104,36 +104,57 @@
 }
 @media(prefers-reduced-motion:reduce){.hc-gallery-slide,.hc-gallery-thumb,.hc-gallery-actions button{transition:none}}
 
-/* Keep real gameplay immediately after the APK card on phones.
-   On desktop keep the first-launch tips beside the download card. */
+
+/* Game-first landing: put authentic swipeable screenshots directly under navigation,
+   ahead of promotional art and the APK download on all devices. */
+.hc-page main > .hc-gameplay{
+  margin-top:0;
+  margin-bottom:0;
+  padding-top:32px;
+  padding-bottom:43px;
+  border-top:0;
+}
+.hc-gallery-download{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:42px;
+  margin-top:13px;
+  padding:10px 17px;
+  border:1px solid #d2a85d;
+  border-radius:11px;
+  background:linear-gradient(120deg,#f4d488,#c89950);
+  color:#161d2c;
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none;
+  box-shadow:0 8px 24px #e7b86325;
+}
+.hc-gallery-download:hover{filter:brightness(1.06)}
+.hc-gallery-download:focus-visible{outline:3px solid #8fd6ff;outline-offset:3px}
 .hc-download{
-  grid-template-areas:"download aside" "gallery gallery";
+  grid-template-areas:"download aside";
   column-gap:38px;
-  row-gap:14px;
 }
 .hc-download > .hc-download-card{grid-area:download;min-width:0}
 .hc-download > .hc-first-launch{grid-area:aside;min-width:0}
-.hc-download > .hc-gameplay{
-  grid-area:gallery;
-  width:100%;
-  min-width:0;
-  margin:0;
-  padding:27px 0 30px;
-}
 @media(max-width:1000px) and (min-width:761px){
   .hc-download{column-gap:26px}
 }
 @media(max-width:760px){
+  .hc-page main > .hc-gameplay{
+    padding-top:20px;
+    padding-bottom:30px;
+    margin-bottom:0;
+  }
+  .hc-gallery-download{min-height:44px;font-size:12px}
   .hc-download{
     display:grid;
     grid-template-columns:minmax(0,1fr);
-    grid-template-areas:"download" "gallery" "aside";
+    grid-template-areas:"download" "aside";
     row-gap:11px;
     margin-bottom:37px;
-  }
-  .hc-download > .hc-gameplay{
-    margin:0;
-    padding:23px 0 20px;
   }
   .hc-download > .hc-first-launch{
     padding:19px 5px 0;

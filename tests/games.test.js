@@ -68,16 +68,19 @@ test('real screenshots form a swipable and keyboard-accessible gallery without c
  }
 });
 
-test('public beta shows real gameplay directly below the download card before install tips on mobile',()=>{
+test('new players see the 19-shot interactive real gameplay carousel first, before promo and download',()=>{
  const page=read('hero-clash/index.html'), style=read('hero-clash/style.css');
+ const navbar=page.indexOf('</header>');
+ const gallery=page.indexOf('id="gameplay"');
+ const hero=page.indexOf('class="hc-hero shell"');
  const download=page.indexOf('id="apk-download"');
- const gameplay=page.indexOf('id="gameplay"');
  const tips=page.indexOf('class="hc-first-launch"');
- const features=page.indexOf('id="adventure"');
- assert.ok(download>=0&&download<gameplay&&gameplay<tips&&tips<features);
+ assert.ok(navbar>=0&&navbar<gallery&&gallery<hero&&hero<download&&download<tips);
  assert.equal((page.match(/id="gameplay"/g)||[]).length,1);
  assert.equal((page.match(/class="hc-gallery-slide"/g)||[]).length,19);
- assert.match(style,/grid-template-areas:"download" "gallery" "aside"/);
- assert.match(style,/\.hc-download > \.hc-gameplay\{/);
+ assert.equal((page.match(/class="hc-gallery-thumb"/g)||[]).length,19);
+ assert.match(page,/class="hc-gallery-download" href="#download"/);
+ assert.match(style,/\.hc-page main > \.hc-gameplay/);
+ assert.match(style,/grid-template-areas:"download" "aside"/);
  assert.ok(page.includes('href="/downloads/hero-clash/android"'));
 });
