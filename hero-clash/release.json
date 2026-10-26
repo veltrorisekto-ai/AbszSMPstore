@@ -2,14 +2,14 @@
   "schema": 1,
   "game": "My Hero Clash With Monster",
   "applicationId": "shop.absz.heroclash.mobile",
-  "version": "0.5.0",
-  "versionCode": 9,
+  "version": "0.5.1",
+  "versionCode": 10,
   "channel": "public_beta",
   "apk": {
-    "filename": "My-Hero-Clash-With-Monster-0.5.0-Protected.apk",
-    "url": "https://hero-cdn.abszsmp.my.id/releases/android/0.5.0/My-Hero-Clash-With-Monster-0.5.0-Protected.apk",
-    "bytes": 1486066,
-    "sha256": "d6c207d2f2ce4ffe27884c3559c755e2aab4918528519ee1ad8c450f0bbf1e52",
+    "filename": "My-Hero-Clash-With-Monster-0.5.1-Protected.apk",
+    "url": "https://hero-cdn.abszsmp.my.id/releases/android/0.5.1/My-Hero-Clash-With-Monster-0.5.1-Protected.apk",
+    "bytes": 1491526,
+    "sha256": "cf33b46aa9674c9f1a90be97fe1c2eec6e042c853729f0ac0cc9f590ee41ac5d",
     "certificateSha256": "03de1feb4d783d0e07c74229a9b064ddb5d5516f7a7aca981b59c2562d59d2cb"
   },
   "resources": {
