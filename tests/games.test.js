@@ -95,3 +95,24 @@ test('desktop real gameplay gallery fills the page instead of starting with a hu
  assert.equal((html.match(/class="hc-gallery-slide"/g)||[]).length,19);
  assert.match(html,/href="\/downloads\/hero-clash\/android"/);
 });
+
+test('Festival Time and Your Hero Skills exchange positions, images, categories and thumbnails',()=>{
+ const html=read('hero-clash/index.html');
+ const slides=[...html.matchAll(/<article class="hc-gallery-slide"[^>]*>[\s\S]*?<\/article>/g)].map(m=>m[0]);
+ const thumbs=[...html.matchAll(/<button type="button" class="hc-gallery-thumb" data-thumb="\d+"[^>]*>[\s\S]*?<\/button>/g)].map(m=>m[0]);
+ assert.equal(slides.length,19);
+ assert.equal(thumbs.length,19);
+ for(const [index,name,file,category] of [
+   [2,'Your Hero Skills','forest-skills.webp','Combat'],
+   [5,'Festival Time','town-festival.webp','Town']
+ ]){
+  assert.ok(slides[index].includes('<h3>'+name+'</h3>'));
+  assert.ok(slides[index].includes(file));
+  assert.ok(slides[index].includes('data-category="'+category+'"'));
+  assert.ok(slides[index].includes('data-index="'+index+'"'));
+  assert.ok(slides[index].includes('data-open="'+index+'"'));
+  assert.ok(thumbs[index].includes(name));
+  assert.ok(thumbs[index].includes(file));
+  assert.ok(thumbs[index].includes('data-thumb="'+index+'"'));
+ }
+});
