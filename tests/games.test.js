@@ -116,3 +116,13 @@ test('Festival Time and Your Hero Skills exchange positions, images, categories 
   assert.ok(thumbs[index].includes('data-thumb="'+index+'"'));
  }
 });
+
+test('Hero Clash Android APK button is green and Windows PC button is gold with unchanged official URLs',()=>{
+ const page=read('hero-clash/index.html'),css=read('hero-clash/style.css');
+ assert.match(page,/class="hc-button hc-download-button hc-platform-download hc-apk-download" id="apk-download" href="\/downloads\/hero-clash\/android"/);
+ assert.match(page,/class="hc-button hc-download-button hc-platform-download hc-pc-download" id="pc-download" href="https:\/\/hero-cdn\.abszsmp\.my\.id\/releases\/windows\/0\.1\.1\/My-Hero-Clash-With-Monster-Windows\.zip"/);
+ assert.equal((page.match(/id="apk-size"/g)||[]).length,1);
+ assert.match(css,/\.hc-page #apk-download,\s*\.hc-page #pc-download/);
+ assert.match(css,/#pc-download \{[\s\S]*?background:linear-gradient\(125deg,#fff3b7/);
+ assert.match(css,/#apk-download,\s*\.hc-page #pc-download \{[\s\S]*?background:linear-gradient\(125deg,#a2ffd0/);
+});

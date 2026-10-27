@@ -56,3 +56,11 @@ test('downloads page uses English for visible labels, instructions, metadata and
  assert.ok(!malay.test(html));
  assert.ok(!malay.test(script));
 });
+
+test('Dungeon GO retains official APK and Windows ZIP routes with green and gold platform button styling',()=>{
+ const css=read('downloads/downloads.css');
+ assert.match(html,/id="android-download" class="download-action android-action" href="\/downloads\/android"/);
+ assert.match(html,/id="windows-download" class="download-action windows-action" href="\/downloads\/windows"/);
+ assert.match(css,/\.download-action\.android-action,\.download-action\.windows-action[\s\S]*?background:linear-gradient\(125deg,#a2ffd0/);
+ assert.match(css,/\.download-action\.windows-action\{[\s\S]*?background:linear-gradient\(125deg,#fff2b7/);
+});

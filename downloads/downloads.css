@@ -160,3 +160,50 @@ button,summary,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:430px){.hero{min-height:392px}.hero h1{font-size:clamp(43px,11.5vw,51px);letter-spacing:-1.8px}.hero-copy>p{font-size:13px}.hero-pill{width:calc(50% - 5px)}.hero-pill:last-child{width:auto}.hero-pills{bottom:12px}.download-card{padding:13px}.device-icon{width:57px;height:60px}.device-icon svg{width:34px;height:34px}.platform-name h2{font-size:17px}.build-badges span{font-size:9px;padding:3px 5px}.download-intro{gap:10px}.download-action{font-size:12px}.download-action>span:last-child{min-width:79px;font-size:11px}.status-card{min-height:64px}.status-icon{width:35px;height:35px}.status-card strong{font-size:10px}.gallery-grid{grid-template-rows:220px 120px 120px}.gallery-feature-text{left:15px;bottom:14px}.gallery-feature-text strong{font-size:16px}.gallery-tile>span{font-size:10px}.glass-panel{padding:15px}.support-card{padding:12px}.support-card>a{font-size:10px;padding:10px 9px}.support-illustration{font-size:28px}}
 @media(max-width:365px){.header-inner,.shell{width:calc(100% - 26px)}.brand{font-size:19px}.hero-pill{width:auto}.hero-pill strong{font-size:9px}.hero-pill small{font-size:8px}.platform-name h2{font-size:15px}.platform-name p{font-size:9px}.device-icon{width:51px;height:55px}.build-badges span{font-size:8px}.download-action>span:last-child{min-width:72px}.status-card{gap:5px;padding:6px}.status-icon{width:30px;height:30px;font-size:18px}.status-card small{font-size:9px}.status-card strong{font-size:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}.download-action:hover,.discord-nav:hover,.gallery-item:hover img{transform:none}}
+
+/* Consistent platform-colour language across ABSZ game downloads. */
+.download-card.android-card{
+  border-color:#27996f;
+  background:linear-gradient(115deg,#062e2beE,#071b27ef 75%),radial-gradient(circle at 22% 0%,#12a56c66,transparent 72%);
+}
+.download-card.windows-card{
+  border-color:#a87828;
+  background:linear-gradient(115deg,#30240deE,#1d1925ef 76%),radial-gradient(circle at 22% 0%,#e0a63857,transparent 72%);
+}
+.windows-card:before{background:radial-gradient(circle at 25% 4%,#f0ba4a32,transparent 56%)}
+.windows-card .windows-device{
+  background:linear-gradient(145deg,#ffdc72,#a86b17);
+  border-color:#ffd877;color:#422707;
+  box-shadow:0 4px 25px #d58c2850,inset 0 1px #fff8;
+}
+.windows-card .windows-device svg {fill:#3b250b}
+.windows-card .card-label,.windows-card .platform-name p{color:#f3d59c}
+.download-action.android-action,.download-action.windows-action{
+  isolation:isolate;overflow:hidden;
+  min-height:55px;height:auto;
+  border:1px solid #a2ffd2;
+  background:linear-gradient(125deg,#a2ffd0 0%,#38e59a 36%,#10af71 100%);
+  color:#063523;
+  box-shadow:0 8px 26px #08c87a40,inset 0 1px #ffffff99,inset 0 -3px #05774b40;
+}
+.download-action.windows-action{
+  border-color:#ffe7a1;
+  background:linear-gradient(125deg,#fff2b7 0%,#ffd66b 37%,#eaaa25 100%);
+  color:#402708;
+  box-shadow:0 8px 26px #f5ba3b48,inset 0 1px #ffffffa8,inset 0 -3px #a16e2340;
+}
+.download-action.android-action:before,.download-action.windows-action:before{
+  content:"";position:absolute;pointer-events:none;inset:0 0 50%;
+  background:linear-gradient(180deg,#fff8,transparent);opacity:.48;
+}
+.download-action.android-action>span:last-child{
+  border-left-color:#076b4b4d;background:#e7ffed35;
+}
+.download-action.windows-action>span:last-child{
+  border-left-color:#8761234d;background:#fff6c53b;
+}
+.download-action.android-action:hover{box-shadow:0 11px 31px #00d38c60}
+.download-action.windows-action:hover{box-shadow:0 11px 31px #ffc04d6b}
+.download-action.android-action:focus-visible,.download-action.windows-action:focus-visible{
+  outline:3px solid white;outline-offset:3px;
+}
