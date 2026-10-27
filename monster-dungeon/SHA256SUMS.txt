@@ -1,0 +1,2 @@
+47c4bfe7b4eb0b96f951e0020cdea917ef0e654638df5cf357569b4efac6c3d6  My-Monsters-and-Dungeon-0.2.0.apk
+5316de22c86a679be6201f3697bd49d4ff0422757853c530b332981b3e1e6386  My-Monsters-and-Dungeon-0.2.0-PC-Launcher-x64.zip

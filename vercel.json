@@ -16,6 +16,22 @@
   },
   "rewrites": [
     {
+      "source": "/games/my-monster-and-dungeon",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
+      "source": "/games/my-monster-and-dungeon/",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
+      "source": "/games/my-monsters-and-dungeon",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
+      "source": "/games/my-monsters-and-dungeon/",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
       "source": "/games/my-hero-clash-with-monsters",
       "destination": "/hero-clash/index.html"
     },

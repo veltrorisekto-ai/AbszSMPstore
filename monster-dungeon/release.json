@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "game": "My Monsters and Dungeon",
+  "version": "0.2.0",
+  "channel": "public_beta",
+  "android": {
+    "filename": "My-Monsters-and-Dungeon-0.2.0.apk",
+    "bytes": 16859,
+    "sha256": "47c4bfe7b4eb0b96f951e0020cdea917ef0e654638df5cf357569b4efac6c3d6",
+    "applicationId": "shop.absz.monstersdungeon",
+    "version": "0.2.0",
+    "versionCode": 2,
+    "minSdk": 26,
+    "targetSdk": 35,
+    "signed": true,
+    "debuggable": false,
+    "physicalDeviceTested": false,
+    "gameOrigin": "https://mmd-api.abszsmp.online/",
+    "certificateSha256": "4c47c95d7ff2d9bc912489e03a5be94068bfbfc483953ba168c17416da380fea",
+    "url": "https://mmd-api.abszsmp.online/releases/0.2.0/My-Monsters-and-Dungeon-0.2.0.apk"
+  },
+  "windows": {
+    "filename": "My-Monsters-and-Dungeon-0.2.0-PC-Launcher-x64.zip",
+    "version": "0.2.0",
+    "bytes": 9275,
+    "sha256": "5316de22c86a679be6201f3697bd49d4ff0422757853c530b332981b3e1e6386",
+    "executable": "MyMonstersAndDungeon.exe",
+    "exeSha256": "0ff4a9add6828fb6077bb7cfddb74b1ef0e6c960df2950b096be7cd1b3ada5c0",
+    "architecture": "Windows x64",
+    "peHeaderVerified": true,
+    "guiSubsystemVerified": true,
+    "runtime": "Microsoft Edge app window; installed Edge required",
+    "signed": false,
+    "physicalDeviceTested": false,
+    "url": "https://mmd-api.abszsmp.online/releases/0.2.0/My-Monsters-and-Dungeon-0.2.0-PC-Launcher-x64.zip"
+  },
+  "gameOrigin": "https://mmd-api.abszsmp.online/",
+  "supportUrl": "https://discord.gg/un8qAeQcZF",
+  "notes": [
+    "Online game client; internet required.",
+    "Existing ABSZ web accounts share cloud saves.",
+    "TNG/DuitNow top-ups use manual owner verification and mailbox delivery.",
+    "Windows launcher is unsigned; physical Android and Windows gameplay QA is pending."
+  ]
+}

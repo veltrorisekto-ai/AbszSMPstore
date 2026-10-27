@@ -11,11 +11,11 @@ test('home download links now lead to our games without breaking Dungeon GO down
   assert.match(downloads,/href="\/downloads\/windows"/);
   assert.match(downloads,/href="\/games\/">All Games/);
 });
-test('the catalogue includes six games, with Dungeon GO and Hero Clash marked available',()=>{
+test('the catalogue includes six games, with Dungeon GO, Hero Clash and Monsters marked available',()=>{
   const html=read('games/index.html');
-  for(const name of ['ABSZ Dungeon GO!','My Monster and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online']) assert.ok(html.includes(name),name);
+  for(const name of ['ABSZ Dungeon GO!','My Monsters and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online']) assert.ok(html.includes(name),name);
   assert.equal((html.match(/class="game-card /g)||[]).length,6);
-  assert.equal((html.match(/status-live/g)||[]).length,2);
+  assert.equal((html.match(/status-live/g)||[]).length,3);
   assert.match(html,/href="\/downloads\/"/);
 });
 test('unreleased games have routed detail pages rather than broken download URLs',()=>{
@@ -120,7 +120,7 @@ test('Festival Time and Your Hero Skills exchange positions, images, categories 
 test('Hero Clash Android APK button is green and Windows PC button is gold with unchanged official URLs',()=>{
  const page=read('hero-clash/index.html'),css=read('hero-clash/style.css');
  assert.match(page,/class="hc-button hc-download-button hc-platform-download hc-apk-download" id="apk-download" href="\/downloads\/hero-clash\/android"/);
- assert.match(page,/class="hc-button hc-download-button hc-platform-download hc-pc-download" id="pc-download" href="https:\/\/hero-cdn\.abszsmp\.my\.id\/releases\/windows\/0\.1\.1\/My-Hero-Clash-With-Monster-Windows\.zip"/);
+ assert.match(page,/class="hc-button hc-download-button hc-platform-download hc-pc-download" id="pc-download" href="https:\/\/hero-cdn\.abszsmp\.my\.id\/releases\/windows\/\d+\.\d+\.\d+\/My-Hero-Clash-With-Monster-Windows\.zip"/);
  assert.equal((page.match(/id="apk-size"/g)||[]).length,1);
  assert.match(css,/\.hc-page #apk-download,\s*\.hc-page #pc-download/);
  assert.match(css,/#pc-download \{[\s\S]*?background:linear-gradient\(125deg,#fff3b7/);
