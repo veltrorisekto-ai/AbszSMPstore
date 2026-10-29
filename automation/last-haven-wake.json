@@ -1,8 +1,1 @@
-{
-  "game": "LAST HAVEN",
-  "request_id": "e6d7e8e8-63d4-48e0-96bc-3817b1711ec6",
-  "workspace": "ai/r11-original-parity-20261030",
-  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-6",
-  "job": "fee31ff3-c354-435d-8f46-d38052c25b6f",
-  "purpose": "Execute the latest isolated R11 parity validation"
-}
+{"request":"cloud-tools-native-pipeline-acceptance-20261030-complete-kit-v3","purpose":"Tools-only acceptance build. Do not promote the game."}
