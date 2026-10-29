@@ -152,3 +152,5 @@ html{background:#fff}body.ps-market{background:#fff;color:var(--ps-text);font-fa
 .ps-charts-page .chart-rating{color:#5c6978;font-size:12px}
 .ps-charts-page .chart-empty{background:#f8fafc;border:0;border-radius:16px}
 @media(max-width:700px){.ps-home-header .ps-brand-name{display:none}.ps-charts-page .chart-intro h1{font-size:34px}.ps-charts-page .chart-row{gap:12px}.ps-charts-page .chart-icon{width:63px;height:63px}}
+
+.review-auth{background:#f1f6fd;border-radius:14px;padding:13px 16px;margin:16px 0;color:#4b6177}.review-auth p{margin:0 0 12px!important;font-size:13px!important}.review-login-link{display:inline-flex;background:#0b57d0;color:white;padding:10px 17px;border-radius:22px;font-size:13px;font-weight:750}.review-self-status{font-size:13px!important;color:#125c9e!important;font-weight:600}

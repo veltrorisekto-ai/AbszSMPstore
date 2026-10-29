@@ -1,33 +1,14 @@
-"use strict";(() => {
-const section=document.querySelector('[data-review-game]');
-if(!section)return;
-const game=section.dataset.reviewGame;
-const list=section.querySelector('[data-review-list]'),score=section.querySelector('[data-score]'),count=section.querySelector('[data-review-count]'),ratingChip=document.querySelector('[data-rating-chip]');
-const distributions=section.querySelector('[data-rating-bars]'),form=section.querySelector('[data-review-form]'),feedback=section.querySelector('[data-review-feedback]');
-function elt(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
-function addReview(review){const card=elt('article','review-card'),header=elt('div','review-author'),avatar=elt('span','review-avatar',(review.name||'?').slice(0,1).toUpperCase()),who=elt('div');
-who.append(elt('div','review-person',review.name),elt('div','review-date',review.date));header.append(avatar,who);
-const stars=elt('div','review-stars','★'.repeat(review.rating)+'☆'.repeat(5-review.rating));stars.setAttribute('aria-label',review.rating+' out of 5 stars');
-card.append(header,stars,elt('p','review-body',review.comment));return card}
-async function load(){
- try{const response=await fetch('/api/game-reviews?game='+encodeURIComponent(game),{headers:{Accept:'application/json'}});const data=await response.json();if(!response.ok||!data.ok)throw Error('unavailable');
-  count.textContent=data.count+(data.count===1?' review':' reviews');
-  if(data.count){
-    score.textContent=Number(data.average).toFixed(1);
-    score.closest('.review-score').querySelector('.review-stars').textContent='★'.repeat(Math.round(data.average))+'☆'.repeat(5-Math.round(data.average));
-    if(ratingChip){ratingChip.querySelector('strong').textContent='★ '+Number(data.average).toFixed(1);ratingChip.querySelector('small').textContent=data.count+' reviews'}
-    const frag=document.createDocumentFragment();for(const x of data.reviews)frag.append(addReview(x));list.replaceChildren(frag);
-  } else {score.textContent='—';list.replaceChildren(elt('div','review-none','No published reviews yet. Be the first to share your experience.'))}
-  const bars=document.createDocumentFragment();for(let n=5;n>=1;n--){const row=elt('div','rating-bar'),label=elt('span','',String(n)),track=elt('div','rating-meter'),fill=elt('i');fill.style.width=(data.count?100*(Number(data.distribution?.[n]||0)/data.count):0)+'%';track.append(fill);row.append(label,track);bars.append(row)}distributions.replaceChildren(bars);
- }catch(e){list.replaceChildren(elt('div','review-none','Reviews are temporarily unavailable. Please try again later.'));if(feedback)feedback.textContent='Review service is currently unavailable.'}
-}
-load();
-if(form)form.addEventListener('submit',async e=>{
- e.preventDefault();const button=form.querySelector('button[type=submit]');const data=new FormData(form);
- const body={game,name:String(data.get('name')||''),rating:Number(data.get('rating')),comment:String(data.get('comment')||''),confirmPlayed:data.get('played')==='on',website:String(data.get('website')||'')};
- button.disabled=true;feedback.textContent='Submitting review…';
- try{const r=await fetch('/api/game-reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const x=await r.json();if(!r.ok||!x.ok)throw Error(x.error||'Unable to submit review');feedback.textContent='Thank you! Your review has been submitted for moderation and will appear if approved.';form.reset()}
- catch(err){feedback.textContent=err.message||'Unable to submit review. Please try again.'}
- finally{button.disabled=false}
-});
+"use strict";(()=>{const section=document.querySelector('[data-review-game]');if(!section)return;const game=section.dataset.reviewGame,list=section.querySelector('[data-review-list]'),score=section.querySelector('[data-score]'),count=section.querySelector('[data-review-count]'),chip=document.querySelector('[data-rating-chip]'),bars=section.querySelector('[data-rating-bars]'),form=section.querySelector('[data-review-form]'),feedback=section.querySelector('[data-review-feedback]'),authPanel=section.querySelector('[data-review-auth]'),myStatus=section.querySelector('[data-my-review]');const url='/games/account/?next='+encodeURIComponent(location.pathname);
+const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
+function reviewCard(r){const card=make('article','review-card'),head=make('div','review-author'),avatar=make('span','review-avatar',(r.name||'?').slice(0,1).toUpperCase()),who=make('div');who.append(make('div','review-person',r.name),make('div','review-date',r.date));head.append(avatar,who);const stars=make('div','review-stars','★'.repeat(r.rating)+'☆'.repeat(5-r.rating));stars.setAttribute('aria-label',r.rating+' out of 5 stars');card.append(head,stars,make('p','review-body',r.comment));return card}
+async function loadPublic(){try{const r=await fetch('/api/game-reviews?game='+encodeURIComponent(game),{credentials:'same-origin',cache:'no-store'});const data=await r.json();if(!r.ok||!data.ok)throw Error();count.textContent=data.count+(data.count===1?' review':' reviews');score.textContent=data.count?Number(data.average).toFixed(1):'—';if(data.count){score.closest('.review-score').querySelector('.review-stars').textContent='★'.repeat(Math.round(data.average))+'☆'.repeat(5-Math.round(data.average));if(chip){chip.querySelector('strong').textContent='★ '+Number(data.average).toFixed(1);chip.querySelector('small').textContent=data.count+' reviews'}}else if(chip){chip.querySelector('strong').textContent='Not rated';chip.querySelector('small').textContent='Community reviews'}
+const frag=document.createDocumentFragment();if(data.reviews.length){data.reviews.forEach(x=>frag.append(reviewCard(x)))}else frag.append(make('div','review-none','No published reviews yet. Approved reviews from signed-in ABSZ players will appear here.'));list.replaceChildren(frag);
+const chart=document.createDocumentFragment();for(let i=5;i>=1;i--){const row=make('div','rating-bar'),n=make('span','',String(i)),m=make('div','rating-meter'),fill=make('i');fill.style.width=(data.count?Number(data.distribution?.[i]||0)/data.count*100:0)+'%';m.append(fill);row.append(n,m);chart.append(row)}bars.replaceChildren(chart);
+}catch{list.replaceChildren(make('div','review-none','Reviews are temporarily unavailable. Please try again later.'))}}
+async function loadAccount(){if(!form)return;try{const r=await fetch('/api/game-reviews?game='+encodeURIComponent(game)+'&me=1',{credentials:'same-origin',cache:'no-store'});const data=await r.json();if(!r.ok||!data.ok)throw Error();if(!data.user){form.hidden=true;authPanel.hidden=false;authPanel.replaceChildren();const note=make('p','','Please register or log in to your ABSZ website account before writing a review.');const a=make('a','review-login-link','Log in / Register');a.href=url;authPanel.append(note,a);myStatus.textContent='';return}
+authPanel.hidden=false;authPanel.replaceChildren(make('p','','Signed in as '+data.user.username+' ('+(data.user.source==='marketplace'?'Marketplace':'Website')+' account).'));
+form.hidden=false;if(data.review){const label=data.review.status==='pending'?'Pending admin approval':data.review.status==='approved'?'Published':'Not approved';myStatus.textContent='Your review: '+label+'. You can update it below.';form.querySelector('[name=rating]').value=String(data.review.rating);form.querySelector('[name=comment]').value=data.review.comment}else myStatus.textContent='Your review will be visible to others after approval.';
+}catch{form.hidden=true;authPanel.hidden=false;authPanel.textContent='Account or review status is temporarily unavailable. Please try again.'}}
+if(form)form.addEventListener('submit',async e=>{e.preventDefault();const btn=form.querySelector('[type=submit]'),fields=new FormData(form);btn.disabled=true;feedback.textContent='Submitting review…';try{const r=await fetch('/api/game-reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({game,rating:Number(fields.get('rating')),comment:String(fields.get('comment')||''),confirmPlayed:fields.get('played')==='on',website:String(fields.get('website')||'')})});const data=await r.json();if(!r.ok||!data.ok)throw Error(data.error||'Could not submit review');feedback.textContent='Review received. Pending admin approval. It will not appear publicly until approved.';form.querySelector('[name=played]').checked=false;await loadAccount()}catch(err){feedback.textContent=err.message||'Unable to submit review'}finally{btn.disabled=false}});
+loadPublic();loadAccount();
 })();

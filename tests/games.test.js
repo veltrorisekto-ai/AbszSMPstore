@@ -199,7 +199,7 @@ test('top charts, original routes and moderated user reviews are wired without f
  assert.match(api,/status='approved'/);
  assert.match(api,/await requireAdmin\(req\)/);
  assert.match(api,/DEFAULT 'pending'/);
- assert.match(api,/hashedIp\(req\)/);
+ assert.match(api,/websiteSession\(req,false\)/);
  assert.doesNotMatch(home,/55M reviews|500M downloads/);
  assert.ok(fs.existsSync(new URL('../games/moderation/index.html',import.meta.url)));
  for(const p of ['games/store.js','games/detail-ui.js','games/reviews.js','games/charts.js','games/moderate.js']){
@@ -252,7 +252,7 @@ test('reviews are submitted by users, moderated by real site admins and not fabr
  assert.equal(typeof utils.validateReview({...valid,confirmPlayed:false}),'string');
  const api=read('api/game-reviews.js'),ui=read('games/reviews.js'),admin=read('games/moderate.js');
  assert.match(api,/requireAdmin\(req\)/);assert.match(api,/status='approved'/);
- assert.match(api,/ON CONFLICT\(game_slug,fingerprint,day_utc\) DO NOTHING/);
+ assert.match(api,/ON CONFLICT\(game_slug,account_key\)/);
  assert.match(api,/CREATE TABLE IF NOT EXISTS absz_game_reviews/);
  assert.match(ui,/fetch\('\/api\/game-reviews/);
  assert.match(admin,/moderate=1/);
@@ -283,4 +283,19 @@ test('all seven redesigned detail pages follow app-store layout with one real re
  assert.match(home,/Windows PC/);
  const css=read('games/playstore.css');assert.match(css,/background:#fff/);
  const js=read('games/playstore.js');new (await import('node:vm')).Script(js);
+});
+
+test('game reviews require signed-in ABSZ account and preserve moderation without anonymous publication',()=>{
+const api=read('api/game-reviews.js'),auth=read('api/_website-auth.js'),frontend=read('games/reviews.js');
+assert.match(api,/websiteSession\(req,false\)/);assert.match(api,/account_key IS NOT NULL/);assert.match(api,/ON CONFLICT\(game_slug,account_key\)/);
+assert.match(auth,/absz_website/);assert.match(auth,/absz_market/);assert.match(auth,/timingSafeEqual/);
+assert.match(frontend,/Pending admin approval/);assert.match(frontend,/games\/account\//);
+for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven']){const page=read('games/app/'+slug+'/index.html');assert.match(page,/data-review-auth/);assert.match(page,/data-review-form hidden/);assert.doesNotMatch(page,/name="name" autocomplete="nickname"/)}
+const cfg=JSON.parse(read('vercel.json'));assert.ok(cfg.rewrites.some(r=>r.source==='/games/account/'&&r.destination==='/games/account/index.html'));
+});
+test('website account endpoints use HttpOnly cookies and origin-checked forms without disclosing passwords',async()=>{
+const api=read('api/web-auth.js'),auth=read('api/_website-auth.js');
+assert.match(api,/bcrypt.hash/);assert.match(api,/bcrypt.compare/);assert.match(api,/authRateLimit/);assert.match(api,/requireSameOrigin/);
+assert.match(auth,/HttpOnly; Secure; SameSite=Lax/);
+for(const js of ['games/account.js','games/reviews.js','games/moderate.js'])new (await import('node:vm')).Script(read(js));
 });

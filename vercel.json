@@ -200,6 +200,14 @@
       "destination": "/games/moderation/index.html"
     },
     {
+      "source": "/games/account",
+      "destination": "/games/account/index.html"
+    },
+    {
+      "source": "/games/account/",
+      "destination": "/games/account/index.html"
+    },
+    {
       "source": "/games/:slug",
       "destination": "/games/detail.html"
     },
