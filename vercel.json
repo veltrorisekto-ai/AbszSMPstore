@@ -64,6 +64,62 @@
       "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/tester.json"
     },
     {
+      "source": "/games/app/my-hero-clash-with-monsters",
+      "destination": "/games/app/my-hero-clash-with-monsters/index.html"
+    },
+    {
+      "source": "/games/app/my-hero-clash-with-monsters/",
+      "destination": "/games/app/my-hero-clash-with-monsters/index.html"
+    },
+    {
+      "source": "/games/app/absz-dungeon-go",
+      "destination": "/games/app/absz-dungeon-go/index.html"
+    },
+    {
+      "source": "/games/app/absz-dungeon-go/",
+      "destination": "/games/app/absz-dungeon-go/index.html"
+    },
+    {
+      "source": "/games/app/my-monster-and-dungeon",
+      "destination": "/games/app/my-monster-and-dungeon/index.html"
+    },
+    {
+      "source": "/games/app/my-monster-and-dungeon/",
+      "destination": "/games/app/my-monster-and-dungeon/index.html"
+    },
+    {
+      "source": "/games/app/last-haven",
+      "destination": "/games/app/last-haven/index.html"
+    },
+    {
+      "source": "/games/app/last-haven/",
+      "destination": "/games/app/last-haven/index.html"
+    },
+    {
+      "source": "/games/app/please-defend-our-king",
+      "destination": "/games/app/please-defend-our-king/index.html"
+    },
+    {
+      "source": "/games/app/please-defend-our-king/",
+      "destination": "/games/app/please-defend-our-king/index.html"
+    },
+    {
+      "source": "/games/app/community-and-friendship",
+      "destination": "/games/app/community-and-friendship/index.html"
+    },
+    {
+      "source": "/games/app/community-and-friendship/",
+      "destination": "/games/app/community-and-friendship/index.html"
+    },
+    {
+      "source": "/games/app/dungeoncraft-online",
+      "destination": "/games/app/dungeoncraft-online/index.html"
+    },
+    {
+      "source": "/games/app/dungeoncraft-online/",
+      "destination": "/games/app/dungeoncraft-online/index.html"
+    },
+    {
       "source": "/games",
       "destination": "/games/index.html"
     },
