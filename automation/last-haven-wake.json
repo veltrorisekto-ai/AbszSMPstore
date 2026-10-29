@@ -1,12 +1,9 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "52b1fb34-40bf-4695-bfaf-55cce3e9e235",
-  "target": "R11 final revision 9",
-  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-9",
-  "testJob": "642b4b4e-fae3-46d2-a2fe-8653fba8a183",
-  "nativeJob": "6c177f21-7831-453f-ad51-3fe31c69da94",
+  "request_id": "99041580-ea2d-4dbc-8803-65b245f20b8b",
+  "purpose": "Run HEAD10 checks for fixed missing test-file paths and real fog/car parity script",
+  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-10",
+  "job": "3eac82e4-5c64-4723-a368-9601cb0e43c1",
   "version": "0.5.3",
-  "build": 8,
-  "requireSourceBoundQA": true,
-  "preventUnverifiedLive": true
+  "build": 8
 }
