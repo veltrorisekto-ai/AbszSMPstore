@@ -1,8 +1,10 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "649d1f4e-3660-4481-b947-3d3bd09f7ea6",
-  "purpose": "Verify fixed in-package client checks and 10 cloud simulation suites for 0.5.3 build8 R11",
+  "request_id": "7752af9e-580f-4813-a4e0-9954fd5b60a5",
+  "purpose": "Build R11 revision 11 after exact-head CI check passed with 10 suites and six client integration assertions",
   "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-11",
-  "job": "455df703-563a-4a29-a294-bf4a2f4ccc85",
-  "onlyPublishVerifiedNativeBuild": true
+  "nativeJob": "badb0636-c8ab-4484-bde9-752cf6292306",
+  "version": "0.5.3",
+  "build": 8,
+  "noPublishWithoutSourceBoundVerification": true
 }
