@@ -272,7 +272,7 @@ test('all seven redesigned detail pages follow app-store layout with one real re
  for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
   const html=read('games/app/'+slug+'/index.html');
   assert.match(html,/ps-detail-header/);assert.match(html,/ps-app-hero/);assert.match(html,/ps-metrics/);
-  assert.match(html,/ps-install/);
+  assert.match(html,/install-row/);
   assert.match(html,/About this game/);assert.match(html,/Similar games/);
   assert.equal((html.match(/id="reviews-title"/g)||[]).length,1,'duplicate review heading '+slug);
   assert.doesNotMatch(html,/data-reviews-game/);

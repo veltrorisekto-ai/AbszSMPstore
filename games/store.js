@@ -47,6 +47,7 @@ document.querySelectorAll('[data-chart-sort]').forEach(b=>b.addEventListener('cl
 const track=document.querySelector('.featured-track'),dots=[...document.querySelectorAll('[data-feature-dot]')];
 function updateDots(){let index=0,best=Infinity;[...track.children].forEach((el,i)=>{const dist=Math.abs(el.offsetLeft-track.scrollLeft-track.offsetLeft);if(dist<best){best=dist;index=i}});dots.forEach((d,i)=>{d.classList.toggle('active',i===index);d.setAttribute('aria-pressed',String(i===index))});
 const chosen=[['My Hero Clash With Monster','Online Hero RPG · Free public beta','/assets/hero-clash/icon.jpg','/games/my-hero-clash-with-monsters/'],['My Monsters and Dungeon','Monster adventure · Free public beta','/assets/monster-dungeon/keyart.webp','/games/my-monster-and-dungeon/'],['LAST HAVEN: Zombie Apocalypse','Survival · Free public beta','/last-haven/icon.svg','/games/last-haven/']][index];if(chosen){const els=['#ps-feature-title','#ps-feature-description','#ps-feature-icon','#ps-feature-link'].map(x=>document.querySelector(x));if(els[0])els[0].textContent=chosen[0];if(els[1])els[1].textContent=chosen[1];if(els[2])els[2].src=chosen[2];if(els[3])els[3].href=chosen[3]}
+}
 let ticking=false;track.addEventListener('scroll',()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{updateDots();ticking=false})},{passive:true});
 dots.forEach(d=>d.addEventListener('click',()=>{const el=track.children[+d.dataset.featureDot];if(el)track.scrollTo({left:el.offsetLeft-track.offsetLeft,behavior:'smooth'})}));
 })();
