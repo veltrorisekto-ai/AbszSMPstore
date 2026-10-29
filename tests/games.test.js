@@ -33,7 +33,20 @@ test('seven app-style detail pages are routed without disturbing the original do
  for(const link of ['/games/my-hero-clash-with-monsters/','/games/my-monster-and-dungeon/','/games/last-haven/']) assert.ok(cfg.rewrites.some(r=>r.source===link));
  assert.ok(cfg.rewrites.some(r=>r.source==='/downloads/'));
 });
-test('Hero Clash has a dedicated download route before the generic coming-soon route',()=>{const routes=JSON.parse(read('vercel.json')).rewrites;const hero=routes.findIndex(r=>r.source==='/games/my-hero-clash-with-monsters/');const generic=routes.findIndex(r=>r.source==='/games/:slug/');assert.ok(hero>=0&&hero<generic);assert.equal(routes[hero].destination,'/hero-clash/index.html');const html=read('hero-clash/index.html');assert.ok(html.includes('/downloads/hero-clash/android'));assert.ok(html.includes('/hero-clash/privacy.html'));assert.ok(!html.includes('Physical two-phone testing'));assert.ok(html.includes('Play Protect review has not yet been completed'));});
+test('Hero Clash has its Play-Store-style game page while the download page remains accessible',()=>{
+ const routes=JSON.parse(read('vercel.json')).rewrites;
+ const app=routes.find(r=>r.source==='/games/my-hero-clash-with-monsters/');
+ const download=routes.find(r=>r.source==='/play/my-hero-clash-with-monsters/');
+ assert.equal(app.destination,'/games/app/my-hero-clash-with-monsters/index.html');
+ assert.equal(download.destination,'/hero-clash/index.html');
+ const detail=read('games/app/my-hero-clash-with-monsters/index.html');
+ assert.match(detail,/href="\/play\/my-hero-clash-with-monsters\/"/);
+ const html=read('hero-clash/index.html');
+ assert.ok(html.includes('/downloads/hero-clash/android'));
+ assert.ok(html.includes('/hero-clash/privacy.html'));
+ assert.ok(!html.includes('Physical two-phone testing'));
+ assert.ok(html.includes('Play Protect review has not yet been completed'));
+});
 test('Hero Clash has no public technical metadata or checksums',()=>{
  const cfg=JSON.parse(read('vercel.json')),page=read('hero-clash/index.html');
  assert.ok(cfg.redirects.some(x=>x.source==='/downloads/hero-clash/android'&&x.destination.endsWith('.apk')));
@@ -149,10 +162,10 @@ test('My Monsters and Dungeon public page hides technical release links while pr
 
 test('app-style game pages only use actual available assets and keep install buttons truthful',()=>{
  const entries=[
- ['my-hero-clash-with-monsters','/games/my-hero-clash-with-monsters/',true],
+ ['my-hero-clash-with-monsters','/play/my-hero-clash-with-monsters/',true],
  ['absz-dungeon-go','/downloads/',true],
- ['my-monster-and-dungeon','/games/my-monster-and-dungeon/',true],
- ['last-haven','/games/last-haven/',true],
+ ['my-monster-and-dungeon','/play/my-monster-and-dungeon/',true],
+ ['last-haven','/play/last-haven/',true],
  ['please-defend-our-king','/games/please-defend-our-king/',false],
  ['community-and-friendship','/games/community-and-friendship/',false],
  ['dungeoncraft-online','/games/dungeoncraft-online/',false]
@@ -165,4 +178,32 @@ test('app-style game pages only use actual available assets and keep install but
  for(const m of page.matchAll(/(?:src)="(\/(?:assets|last-haven)\/[^"]+)"/g))assert.ok(fs.existsSync(new URL('..'+m[1],import.meta.url)),m[1]);
  }
  const js=read('games/detail-ui.js');assert.match(js,/ArrowRight/);assert.match(js,/touchstart/);
+});
+
+test('Top Charts, original game routes, review moderation and database safety are wired',async()=>{
+ const home=read('games/index.html'),script=read('games/store.js'),api=read('api/game-reviews.js');
+ const routes=JSON.parse(read('vercel.json')).rewrites;
+ assert.match(home,/Top charts/);
+ assert.match(home,/ABSZ Picks/);
+ assert.match(home,/Most reviewed/);
+ assert.match(script,/chartScores/);
+ for(const slug of ['my-hero-clash-with-monsters','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online','absz-dungeon-go']){
+  const url='/games/'+slug+'/';
+  assert.equal(routes.find(r=>r.source===url)?.destination,'/games/app/'+slug+'/index.html');
+  const page=read('games/app/'+slug+'/index.html');
+  assert.match(page,/Ratings &amp; reviews/);
+  assert.match(page,/data-reviews-game=/);
+  assert.match(page,/script src="\/games\/reviews-ui\.js"/);
+ }
+ for(const slug of ['my-hero-clash-with-monsters','my-monster-and-dungeon','last-haven'])
+  assert.ok(routes.find(r=>r.source==='/play/'+slug+'/'));
+ assert.match(api,/status='approved'/);
+ assert.match(api,/await requireAdmin\(req\)/);
+ assert.match(api,/status:'pending'/);
+ assert.match(api,/fingerprint/);
+ assert.doesNotMatch(home,/55M reviews|500M downloads/);
+ assert.ok(fs.existsSync(new URL('../games/review-moderation/index.html',import.meta.url)));
+ for(const p of ['games/store.js','games/detail-ui.js','games/reviews-ui.js','games/review-moderation/moderate.js']){
+  new (await import('node:vm')).Script(read(p),{filename:p});
+ }
 });
