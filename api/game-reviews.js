@@ -1,95 +1,85 @@
 import crypto from 'node:crypto';
-import { sql, send, requireAdmin } from './_lib.js';
-
-const GAMES=new Set(["my-hero-clash-with-monsters","absz-dungeon-go","my-monster-and-dungeon","last-haven","please-defend-our-king","community-and-friendship","dungeoncraft-online"]);
-const OPEN=new Set(["my-hero-clash-with-monsters","absz-dungeon-go","my-monster-and-dungeon","last-haven"]);
-const MAX_BODY=5000;
-let initPromise;
-async function ensureSchema(){
- if(!initPromise)initPromise=sql`CREATE TABLE IF NOT EXISTS absz_game_reviews (
- id BIGSERIAL PRIMARY KEY,
- game_slug TEXT NOT NULL,
- display_name VARCHAR(32) NOT NULL,
- rating SMALLINT NOT NULL CHECK(rating BETWEEN 1 AND 5),
- body VARCHAR(600) NOT NULL,
- status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
- fingerprint VARCHAR(64) NOT NULL,
- day_utc DATE NOT NULL DEFAULT (now() AT TIME ZONE 'UTC')::date,
- created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
- approved_at TIMESTAMPTZ,
- reviewed_by TEXT,
- CONSTRAINT absz_review_one_daily UNIQUE (game_slug,fingerprint,day_utc)
- )`.catch(err=>{initPromise=null;throw err});
- await initPromise;
+import {sql,send,requireAdmin,qs} from './_lib.js';
+import {ALL_GAMES,PLAYABLE_GAMES,gameSet,validateReview} from './_game-review-utils.js';
+let initialized;
+async function ensureTable(){
+ if(!initialized)initialized=(async()=>{
+  await sql`CREATE TABLE IF NOT EXISTS absz_game_reviews (
+    id BIGSERIAL PRIMARY KEY,
+    game_slug TEXT NOT NULL,
+    reviewer_name VARCHAR(50) NOT NULL,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    review_text VARCHAR(1200) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    ip_hash VARCHAR(64) NOT NULL,
+    submit_day DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    moderated_at TIMESTAMPTZ,
+    UNIQUE (game_slug, ip_hash, submit_day)
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS absz_game_reviews_visible_idx ON absz_game_reviews(game_slug,status,created_at DESC)`;
+ })().catch(e=>{initialized=null;throw e});
+ return initialized;
 }
-function okaySlug(s){return typeof s==='string'&&GAMES.has(s)}
-function bad(res,code,msg){return send(res,code,{ok:false,error:msg})}
-function originMatches(req){const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
- if(typeof origin!=='string'||typeof host!=='string')return false;
- try{const u=new URL(origin);return u.protocol==='https:'&&u.host===host&&(host==='abszrpg.shop'||host.endsWith('.vercel.app'))}catch{return false}
+const sameSite=req=>{const origin=String(req.headers.origin||'');return origin==='https://abszrpg.shop'||origin.endsWith('.vercel.app')&&origin.startsWith('https://')};
+const originOK=req=>{const origin=String(req.headers.origin||'');return origin==='https://abszrpg.shop'||origin==='https://www.abszrpg.shop'};
+function hashedIp(req){
+ const forwarded=String(req.headers['x-vercel-forwarded-for']||req.headers['x-real-ip']||req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0].trim();
+ const secret=process.env.REVIEW_HASH_SECRET||process.env.SESSION_SECRET||process.env.DATABASE_URL;
+ if(!secret)throw new Error('Review moderation key is not configured');
+ return crypto.createHmac('sha256',secret).update(forwarded).digest('hex');
 }
-async function body(req){
- if(req.body && typeof req.body==='object'){const raw=JSON.stringify(req.body);if(raw.length>MAX_BODY)throw Object.assign(new Error('Review too long'),{status:413});return req.body}
- let raw=typeof req.body==='string'?req.body:'';
- if(!raw){for await(const chunk of req){raw+=chunk;if(raw.length>MAX_BODY)throw Object.assign(new Error('Review too long'),{status:413})}}
- if(raw.length>MAX_BODY)throw Object.assign(new Error('Review too long'),{status:413});
- try{return JSON.parse(raw)}catch{throw Object.assign(new Error('Invalid form'),{status:400})}
+async function requestBody(req){
+ if(typeof req.body==='object'&&req.body!==null)return req.body;
+ if(typeof req.body==='string'){if(req.body.length>8192)throw Object.assign(new Error('Review too large'),{status:413});return JSON.parse(req.body)}
+ let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>8192)throw Object.assign(new Error('Review too large'),{status:413})}return raw?JSON.parse(raw):{};
 }
-function fingerprint(req){const addr=String(req.headers['x-vercel-forwarded-for']||req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0].trim();
- const ua=String(req.headers['user-agent']||'').slice(0,255);
- return crypto.createHmac('sha256',process.env.SESSION_SECRET||'review-fallback').update(addr+'|'+ua).digest('hex')
+function summary(rows){return rows.map(x=>({game:x.game_slug,count:Number(x.count),average:Math.round(Number(x.average)*10)/10}))}
+function publicRow(x){return {id:String(x.id),name:x.reviewer_name,rating:Number(x.rating),comment:x.review_text,date:new Date(x.created_at).toISOString().slice(0,10)}}
+async function readApproved(game){
+ const [stats,rows,bars]=await Promise.all([
+  sql`SELECT COUNT(*)::int AS count,COALESCE(AVG(rating),0)::numeric AS average FROM absz_game_reviews WHERE game_slug=${game} AND status='approved'`,
+  sql`SELECT id,reviewer_name,rating,review_text,created_at FROM absz_game_reviews WHERE game_slug=${game} AND status='approved' ORDER BY created_at DESC LIMIT 30`,
+  sql`SELECT rating,COUNT(*)::int AS count FROM absz_game_reviews WHERE game_slug=${game} AND status='approved' GROUP BY rating`
+ ]);
+ return {ok:true,game,count:Number(stats[0]?.count||0),average:stats[0]?.count?Math.round(Number(stats[0].average)*10)/10:null,distribution:Object.fromEntries(bars.map(x=>[Number(x.rating),Number(x.count)])),reviews:rows.map(publicRow)};
 }
-function publicRow(r){return {id:String(r.id),display_name:r.display_name,rating:Number(r.rating),body:r.body,created_at:r.created_at}}
-function statsFor(rows){const d={1:0,2:0,3:0,4:0,5:0};let count=0,sum=0;for(const r of rows){const n=Number(r.rating);if(n>=1&&n<=5){count++;sum+=n;d[n]++}}return {count,average:count?Math.round(sum/count*10)/10:0,distribution:d}}
 export default async function handler(req,res){
  try{
- res.setHeader('X-Content-Type-Options','nosniff');
- if(!process.env.DATABASE_URL||!process.env.SESSION_SECRET)return bad(res,503,'Community reviews are not configured');
- if(req.method==='OPTIONS'){res.setHeader('Allow','GET, POST');return send(res,204,{})}
- if(!['GET','POST'].includes(req.method))return bad(res,405,'Method not allowed');
- await ensureSchema();
- if(req.method==='GET'){
- const u=new URL(req.url,'https://abszrpg.shop');
- if(u.searchParams.get('moderate')==='pending'){
- await requireAdmin(req);
- const pending=await sql`SELECT id,game_slug,display_name,rating,body,created_at FROM absz_game_reviews WHERE status='pending' ORDER BY created_at ASC LIMIT 100`;
- return send(res,200,{ok:true,reviews:pending.map(r=>({...publicRow(r),game_slug:r.game_slug}))})
- }
- if(u.searchParams.get('stats')==='1'){
- const rs=await sql`SELECT game_slug,COUNT(*)::integer AS count,ROUND(AVG(rating)::numeric,1) AS average FROM absz_game_reviews WHERE status='approved' GROUP BY game_slug`;
- return send(res,200,{ok:true,stats:rs.map(r=>({game_slug:r.game_slug,count:Number(r.count),average:Number(r.average)}))})
- }
- const game=u.searchParams.get('game');
- if(!okaySlug(game))return bad(res,400,'Unknown game');
- const rows=await sql`SELECT id,display_name,rating,body,created_at FROM absz_game_reviews WHERE game_slug=${game} AND status='approved' ORDER BY created_at DESC LIMIT 40`;
- const ratings=await sql`SELECT rating FROM absz_game_reviews WHERE game_slug=${game} AND status='approved'`;
- return send(res,200,{ok:true,game_slug:game,reviews:rows.map(publicRow),stats:statsFor(ratings)})
- }
- if(!originMatches(req))return bad(res,403,'Please submit through the official ABSZ website');
- const data=await body(req);
- if(data.action==='moderate'){
- const admin=await requireAdmin(req);
- const id=Number(data.id),action=data.decision;
- if(!Number.isSafeInteger(id)||id<1||!['approve','reject'].includes(action))return bad(res,400,'Invalid decision');
- const result=await sql`UPDATE absz_game_reviews SET status=${action==='approve'?'approved':'rejected'},approved_at=CASE WHEN ${action==='approve'} THEN now() ELSE NULL END,reviewed_by=${String(admin.id)} WHERE id=${id} AND status='pending' RETURNING id`;
- return result.length?send(res,200,{ok:true}):bad(res,404,'Review not found or already moderated')
- }
- const game=data.game_slug;
- if(!okaySlug(game)||!OPEN.has(game))return bad(res,400,'Reviews are unavailable for this game');
- if(data.website)return send(res,202,{ok:true,status:'pending'});
- if(!['string','number'].includes(typeof data.rating))return bad(res,400,'Select a valid rating');
- const rating=Number(data.rating),name=String(data.display_name||'').trim().replace(/\s+/g,' '),text=String(data.body||'').trim();
- if(!Number.isInteger(rating)||rating<1||rating>5)return bad(res,400,'Select 1 to 5 stars');
- if(name.length<2||name.length>32||/[<>\r\n]/.test(name))return bad(res,400,'Display name must be 2–32 characters');
- if(text.length<20||text.length>600||/[<>]/.test(text))return bad(res,400,'Review must be 20–600 characters');
- if(/https?:\/\/|www\.|(?:@|\b)\w+\.com\b/i.test(text))return bad(res,400,'Links are not allowed in reviews');
- try{
- await sql`INSERT INTO absz_game_reviews (game_slug,display_name,rating,body,fingerprint) VALUES(${game},${name},${rating},${text},${fingerprint(req)})`;
- }catch(err){if(err.code==='23505')return bad(res,429,'You have already submitted a review for this game today');throw err}
- return send(res,202,{ok:true,status:'pending'})
- }catch(err){
- const status=Number(err.status)||500;
- if(status>=500)console.error('ABSZ review API failed',err?.message);
- return bad(res,status,status>=500?'Community reviews are temporarily unavailable':(err.message||'Request failed'))
- }
+  res.setHeader('X-Content-Type-Options','nosniff');
+  if(!['GET','POST'].includes(req.method))return send(res,405,{ok:false,error:'Method not allowed'});
+  await ensureTable();
+  const params=qs(req),admin=params.get('moderate')==='1';
+  if(admin){
+   await requireAdmin(req);
+   if(req.method==='GET'){
+    const queue=await sql`SELECT id,game_slug,reviewer_name,rating,review_text,created_at FROM absz_game_reviews WHERE status='pending' ORDER BY created_at ASC LIMIT 200`;
+    return send(res,200,{ok:true,queue:queue.map(x=>({id:String(x.id),game:x.game_slug,...publicRow(x)}))});
+   }
+   if(!originOK(req))return send(res,403,{ok:false,error:'Invalid request origin'});
+   const body=await requestBody(req);
+   if(!['approved','rejected'].includes(body.action)||!/^\d{1,18}$/.test(String(body.id)))return send(res,400,{ok:false,error:'Invalid moderation request'});
+   const changed=await sql`UPDATE absz_game_reviews SET status=${body.action},moderated_at=now() WHERE id=${body.id}::bigint AND status='pending' RETURNING id`;
+   return send(res,200,{ok:true,updated:changed.length>0});
+  }
+  if(req.method==='GET'){
+   if(params.get('summary')==='1'){
+    const rows=await sql`SELECT game_slug,COUNT(*)::int AS count,AVG(rating)::numeric AS average FROM absz_game_reviews WHERE status='approved' GROUP BY game_slug`;
+    return send(res,200,{ok:true,games:summary(rows).filter(x=>gameSet.has(x.game))});
+   }
+   const game=params.get('game');if(!gameSet.has(game))return send(res,400,{ok:false,error:'Unknown game'});
+   return send(res,200,await readApproved(game));
+  }
+  if(!originOK(req))return send(res,403,{ok:false,error:'Invalid request origin'});
+  const body=await requestBody(req);
+  if(typeof body.website==='string'&&body.website.trim())return send(res,200,{ok:true,pending:true});
+  const check=validateReview(body);
+  if(typeof check==='string')return send(res,400,{ok:false,error:check});
+  const ipHash=hashedIp(req);
+  const result=await sql`INSERT INTO absz_game_reviews(game_slug,reviewer_name,rating,review_text,ip_hash,status)
+   VALUES(${check.game},${check.name},${check.rating},${check.comment},${ipHash},'pending')
+   ON CONFLICT(game_slug,ip_hash,submit_day) DO NOTHING RETURNING id`;
+  if(!result.length)return send(res,429,{ok:false,error:'Only one review per game per day is allowed'});
+  return send(res,201,{ok:true,pending:true,message:'Thank you. Your review is awaiting moderation.'});
+ }catch(e){const status=Number(e?.status)||500;const safe=[400,401,403,413,429].includes(status);return send(res,safe?status:503,{ok:false,error:safe?e.message:'Reviews are temporarily unavailable'})}
 }

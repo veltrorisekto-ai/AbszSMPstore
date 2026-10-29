@@ -207,3 +207,56 @@ test('Top Charts, original game routes, review moderation and database safety ar
   new (await import('node:vm')).Script(read(p),{filename:p});
  }
 });
+
+test('every public game URL resolves to ABSZ app-store detail layout rather than old landing page',()=>{
+ const cfg=JSON.parse(read('vercel.json'));
+ for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
+  for(const suffix of ['','/']){
+   const route=cfg.rewrites.find(x=>x.source==='/games/'+slug+suffix);
+   assert.ok(route,'missing app route: '+slug+suffix);
+   assert.equal(route.destination,'/games/app/'+slug+'/index.html');
+  }
+  const html=read('games/app/'+slug+'/index.html');
+  assert.match(html,/Ratings &amp; Reviews/);
+  assert.match(html,/data-rating-chip/);
+  assert.match(html,/data-review-game=/);
+  assert.match(html,/\/games\/reviews\.js/);
+ }
+});
+test('download buttons preserve Android and Windows destinations while coming-soon games do not claim installs',()=>{
+ const cfg=JSON.parse(read('vercel.json'));
+ for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven']){
+  const html=read('games/app/'+slug+'/index.html');
+  assert.match(html,/Download Android APK/);assert.match(html,/Download Windows PC/);
+  assert.match(html,/class="install-row platform-installs"/);
+ }
+ for(const slug of ['please-defend-our-king','community-and-friendship','dungeoncraft-online']){
+  const html=read('games/app/'+slug+'/index.html');
+  assert.match(html,/Coming Soon/);assert.doesNotMatch(html,/class="install-button android-install"/);
+ }
+ for(const source of ['/downloads/android','/downloads/windows','/downloads/monster-dungeon/android','/downloads/monster-dungeon/windows','/downloads/hero-clash/android','/downloads/hero-clash/windows','/downloads/last-haven/android','/downloads/last-haven/windows']){
+  assert.ok(cfg.redirects.some(r=>r.source===source),source);
+ }
+});
+test('top charts are curated honestly until real community ratings accumulate',()=>{
+ const html=read('games/charts/index.html'),js=read('games/charts.js'),index=read('games/index.html');
+ assert.match(index,/Top charts/);assert.match(index,/\/games\/charts\//);
+ assert.match(html,/Studio picks/);assert.match(html,/Community favourites/);
+ assert.match(html,/not a claim of most downloads/);assert.match(html,/at least 3 approved community reviews/);
+ assert.match(js,/Number\(x\.count\)>=3/);
+});
+test('reviews are submitted by users, moderated by real site admins and not fabricated in markup',async()=>{
+ const utils=await import('../api/_game-review-utils.js');
+ const valid={game:'my-hero-clash-with-monsters',name:'Player123',rating:5,comment:'I enjoy the friendly adventures.',confirmPlayed:true};
+ assert.equal(typeof utils.validateReview(valid),'object');
+ assert.equal(typeof utils.validateReview({...valid,game:'community-and-friendship'}),'string');
+ assert.equal(typeof utils.validateReview({...valid,rating:7}),'string');
+ assert.equal(typeof utils.validateReview({...valid,confirmPlayed:false}),'string');
+ const api=read('api/game-reviews.js'),ui=read('games/reviews.js'),admin=read('games/moderate.js');
+ assert.match(api,/requireAdmin\(req\)/);assert.match(api,/status='approved'/);
+ assert.match(api,/ON CONFLICT\(game_slug,ip_hash,submit_day\) DO NOTHING/);
+ assert.match(api,/CREATE TABLE IF NOT EXISTS absz_game_reviews/);
+ assert.match(ui,/fetch\('\/api\/game-reviews/);
+ assert.match(admin,/moderate=1/);
+ assert.doesNotMatch(read('games/index.html'),/55M reviews|500M downloads/);
+});
