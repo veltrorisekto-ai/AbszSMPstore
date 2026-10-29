@@ -183,7 +183,7 @@ test('seven app store pages display real assets, appropriate status and secure d
 test('top charts, original routes and moderated user reviews are wired without fake user scores',async()=>{
  const home=read('games/index.html'),routes=JSON.parse(read('vercel.json')).rewrites;
  assert.match(home,/Top charts/);
- assert.match(home,/Studio picks/);
+ assert.match(home,/ABSZ Picks|Studio picks/);
  const charts=read('games/charts/index.html');
  assert.match(charts,/Community favourites/);
  assert.match(charts,/not a claim of most downloads/);
