@@ -27,12 +27,15 @@ test('unreleased games have routed detail pages rather than broken download URLs
   assert.ok(routes.some(r=>r.source==='/games/'&&r.destination==='/games/index.html'));
   assert.ok(routes.some(r=>r.source==='/games/:slug/'&&r.destination==='/games/detail.html'));
 });
-test('Hero Clash has a dedicated download route before the generic coming-soon route',()=>{const routes=JSON.parse(read('vercel.json')).rewrites;const hero=routes.findIndex(r=>r.source==='/games/my-hero-clash-with-monsters/');const generic=routes.findIndex(r=>r.source==='/games/:slug/');assert.ok(hero>=0&&hero<generic);assert.equal(routes[hero].destination,'/hero-clash/index.html');const html=read('hero-clash/index.html');assert.ok(html.includes('/downloads/hero-clash/android'));assert.ok(html.includes('/hero-clash/privacy.html'));assert.ok(html.includes('Physical two-phone testing'));assert.ok(html.includes('Play Protect review has not yet been completed'));});
-test('Hero Clash release metadata describes the verified public APK and resource sizes',()=>{
- const r=JSON.parse(read('hero-clash/release.json')), cfg=JSON.parse(read('vercel.json'));
- assert.equal(r.applicationId,'shop.absz.heroclash.mobile');assert.match(r.version,/^[0-9]+[.][0-9]+[.][0-9]+$/);assert.ok(Number.isSafeInteger(r.versionCode)&&r.versionCode>0);assert.equal(r.channel,'public_beta');
- const redirect=cfg.redirects.find(x=>x.source==='/downloads/hero-clash/android');assert.equal(redirect.destination,r.apk.url);assert.match(r.apk.sha256,/^[a-f0-9]{64}$/);assert.ok(r.apk.bytes>1000000);assert.equal(read('hero-clash/SHA256SUMS.txt').trim(),r.apk.sha256+'  '+r.apk.filename);
- assert.equal(r.verification.signatureVerified,true);assert.equal(r.verification.debuggable,false);assert.equal(r.verification.playProtectCleared,false);assert.equal(r.verification.physicalDeviceTested,false);assert.deepEqual(r.android.permissions,['android.permission.INTERNET']);assert.ok(Number.isSafeInteger(r.resources.downloadBytes)&&r.resources.downloadBytes>10000000);for(const path of ['/games/my-hero-clash-with-monsters','/games/my-hero-clash-with-monsters/'])assert.ok(cfg.headers.some(h=>h.source===path&&h.headers.some(v=>v.key==='Content-Security-Policy')));
+test('Hero Clash has a dedicated download route before the generic coming-soon route',()=>{const routes=JSON.parse(read('vercel.json')).rewrites;const hero=routes.findIndex(r=>r.source==='/games/my-hero-clash-with-monsters/');const generic=routes.findIndex(r=>r.source==='/games/:slug/');assert.ok(hero>=0&&hero<generic);assert.equal(routes[hero].destination,'/hero-clash/index.html');const html=read('hero-clash/index.html');assert.ok(html.includes('/downloads/hero-clash/android'));assert.ok(html.includes('/hero-clash/privacy.html'));assert.ok(!html.includes('Physical two-phone testing'));assert.ok(html.includes('Play Protect review has not yet been completed'));});
+test('Hero Clash has no public technical metadata or checksums',()=>{
+ const cfg=JSON.parse(read('vercel.json')),page=read('hero-clash/index.html');
+ assert.ok(cfg.redirects.some(x=>x.source==='/downloads/hero-clash/android'&&x.destination.endsWith('.apk')));
+ assert.ok(!page.includes('APK checksum'));
+ assert.ok(!page.includes('/hero-clash/release.js'));
+ assert.ok(!fs.existsSync(new URL('../hero-clash/release.json',import.meta.url)));
+ for(const path of ['/games/my-hero-clash-with-monsters','/games/my-hero-clash-with-monsters/'])
+  assert.ok(cfg.headers.some(h=>h.source===path&&h.headers.some(v=>v.key==='Content-Security-Policy')));
 });
 
 test('mobile game catalogue keeps seven game links but prevents Hero Clash hero-layout collision',()=>{
@@ -58,7 +61,7 @@ test('real screenshots form a swipable and keyboard-accessible gallery without c
  assert.equal((page.match(/class="hc-gallery-slide"/g)||[]).length,19);
  assert.equal((page.match(/class="hc-gallery-thumb"/g)||[]).length,19);
  assert.ok(page.includes('/downloads/hero-clash/android'));
- assert.equal(v.redirects.find(x=>x.source==='/downloads/hero-clash/android').destination,JSON.parse(read('hero-clash/release.json')).apk.url);
+ assert.match(v.redirects.find(x=>x.source==='/downloads/hero-clash/android').destination,/^https:\/\/hero-cdn\.abszsmp\.my\.id\/releases\/android\/.*\.apk$/);
  assert.match(css,/scroll-snap-type:x mandatory/);
  assert.match(script,/touchstart/);
  assert.match(script,/ArrowLeft/);
@@ -140,7 +143,7 @@ test('My Monsters and Dungeon public page hides technical release links while pr
  assert.doesNotMatch(page,/Download checksums|Release details/);
  assert.doesNotMatch(page,/href="\/monster-dungeon\/(?:SHA256SUMS\.txt|release\.json)"/);
  assert.doesNotMatch(page,/System WebView|WebGL-capable|dedicated Edge app window|Game assets load online/);
- assert.match(page,/href="https:\/\/mmd-api\.abszsmp\.online\/releases\/0\.2\.0\/My-Monsters-and-Dungeon-0\.2\.0\.apk"/);
- assert.match(page,/href="https:\/\/mmd-api\.abszsmp\.online\/releases\/0\.2\.0\/My-Monsters-and-Dungeon-0\.2\.0-PC-Launcher-x64\.zip"/);
- assert.match(page,/Installation guide/);
+ assert.match(page,/href="\/downloads\/monster-dungeon\/android"/);
+ assert.match(page,/href="\/downloads\/monster-dungeon\/windows"/);
+ assert.doesNotMatch(page,/READ-ME-FIRST|mmd-api\.abszsmp\.online/);
 });

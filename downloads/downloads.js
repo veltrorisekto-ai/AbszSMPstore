@@ -1,6 +1,5 @@
 /* Absz Dungeon GO — reference-inspired Downloads UI. No payment/store state is modified. */
 'use strict';
-const GAME_API='https://aegis-game.abszrpg.shop';
 const $=id=>document.getElementById(id);
 const toast=$('feedback');
 let toastTimer;
@@ -8,73 +7,6 @@ function notify(message){
   toast.textContent=message;toast.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>toast.classList.remove('visible'),3500);
-}
-function text(id,value){const node=$(id);if(node)node.textContent=value;}
-function formatMB(size){return (size/1e6).toFixed(1)+' MB';}
-function isValidFile(file,version){
-  if(!file||!Number.isSafeInteger(file.size)||file.size<1000000||!(/^[a-f0-9]{64}$/.test(file.sha256)))return false;
-  const platformVersion=file.release_version??version;
-  if(typeof platformVersion!=='string'||!(/^\d+\.\d+\.\d+$/.test(platformVersion)))return false;
-  const releasePath=file.release_path??platformVersion;
-  if(typeof releasePath!=='string'||!(new RegExp('^'+platformVersion.replaceAll('.', '\\.')+'(?:-r[1-9][0-9]*)?$')).test(releasePath))return false;
-  try{
-    const url=new URL(file.url);
-    return url.protocol==='https:'&&url.hostname==='cdn.abszrpg.shop'
-      &&url.pathname.startsWith('/downloads/'+releasePath+'/');
-  }catch{return false;}
-}
-async function populateRelease(){
-  try{
-    const response=await fetch('/downloads/release.json',{cache:'no-store'});
-    if(!response.ok)throw new Error('Release metadata unavailable');
-    const release=await response.json();
-    if(release.game!=='Absz Dungeon GO!'||!(/^\d+\.\d+\.\d+$/.test(release.version))
-      ||!isValidFile(release.android,release.version)||!isValidFile(release.windows,release.version))throw new Error('Invalid release metadata');
-    document.querySelectorAll('[data-release-version]').forEach(node=>node.textContent='v'+release.version);
-    document.querySelectorAll('[data-platform-version]').forEach(node=>{
-      const file=release[node.dataset.platformVersion];
-      if(file)node.textContent='v'+(file.release_version??release.version);
-    });
-    text('current-version','v'+release.version+' Online Alpha');
-    for(const platform of ['android','windows']){
-      const file=release[platform];
-      text(platform+'-size',formatMB(file.size));
-      text(platform+'-size-bar',formatMB(file.size));
-      const link=$(platform+'-download');
-      /* The existing first-party redirect is maintained as a safe, durable fallback.
-         Both /downloads/android and /downloads/windows are tested against release.json. */
-      link.dataset.officialFile=file.filename||'';
-    }
-  }catch(error){
-    console.warn('Cannot refresh game release metadata:',error);
-    notify('The latest release metadata could not be verified. Check the official checksums before installing.');
-  }
-}
-async function checkRealm(){
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),7000);
-  try{
-    const response=await fetch(GAME_API+'/health',{cache:'no-store',signal:controller.signal});
-    if(!response.ok)throw new Error('API unavailable');
-    const result=await response.json();
-    if(result.game!=='Absz Dungeon GO!'||result.server_id!=='aegis'||result.protocol!==5)throw new Error('Unexpected service');
-    text('api-status','Game API reachable');
-    /* The /health response identifies the API only; it does NOT prove gameplay realm is online.
-       Only a dedicated validated multiplayer-health flag can confirm the realm. */
-    if(result.realm?.status==='online' && result.realm?.validated===true){
-      text('realm-status','Online');
-      $('realm-dot').classList.add('confirmed');
-    }else if(result.realm?.status==='offline' && result.realm?.validated===true){
-      text('realm-status','Offline');
-      $('realm-dot').classList.remove('confirmed');
-    }else{
-      text('realm-status',result.ready===true?'Aegis ready':'Unverified');
-    }
-  }catch{
-    text('api-status','Game API unreachable');
-    text('realm-status','Unverified');
-    $('realm-dot').classList.remove('confirmed');
-  }finally{clearTimeout(timeout);}
 }
 const toggle=document.querySelector('.mobile-toggle');
 const siteNav=$('site-nav');
@@ -131,19 +63,3 @@ dialog.querySelector('.lightbox-close').addEventListener('click',()=>dialog.clos
 dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
 dialog.addEventListener('close',()=>dialogImage.removeAttribute('src'));
 
-async function populateLiveContent(){
-  try{
-    const r=await fetch('/downloads/aegis-status.json',{cache:'no-store'});
-    if(!r.ok)throw Error('Live content status unavailable');
-    const data=await r.json();
-    const android=data.channels?.android?.alpha,pc=data.channels?.windows?.alpha;
-    const version=p=>typeof p?.version==='string'&&p.signature_verified===true&&/^\d+\.\d+\.\d+(?:[-.][A-Za-z0-9.-]+)?$/.test(p.version)?p.version.match(/^\d+\.\d+\.\d+/)[0]:null;
-    const a=version(android),w=version(pc);
-    if(!a||!w)throw Error('Signed live content could not be verified');
-    text('current-version',a===w?'v'+a+' Online Alpha':'Android v'+a+' · PC v'+w);
-    document.querySelectorAll('[data-release-version]').forEach(node=>node.textContent=a===w?'v'+a:'Android v'+a+' / PC v'+w);
-  }catch(error){console.warn('Live content version could not be refreshed:',error);}
-}
-
-populateRelease().then(populateLiveContent);
-checkRealm();

@@ -64,10 +64,6 @@
       "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/channels/tester.json"
     },
     {
-      "source": "/downloads/aegis-status.json",
-      "destination": "https://absz-dungeon-studio-publisher.absz-gaming-67efd4.workers.dev/public/status"
-    },
-    {
       "source": "/games",
       "destination": "/games/index.html"
     },
@@ -167,8 +163,13 @@
       "permanent": false
     },
     {
-      "source": "/downloads/checksums",
-      "destination": "/downloads/SHA256SUMS.txt",
+      "source": "/downloads/monster-dungeon/android",
+      "destination": "https://mmd-api.abszsmp.online/releases/0.2.0/My-Monsters-and-Dungeon-0.2.0.apk",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/monster-dungeon/windows",
+      "destination": "https://mmd-api.abszsmp.online/releases/0.2.0/My-Monsters-and-Dungeon-0.2.0-PC-Launcher-x64.zip",
       "permanent": false
     }
   ],
@@ -178,7 +179,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' https://aegis-game.abszrpg.shop https://br-summer-cherry-a15duloj-game.compute.c-1.ap-southeast-1.aws.neon.tech; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "X-Content-Type-Options",
@@ -208,15 +209,6 @@
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
-        }
-      ]
-    },
-    {
-      "source": "/downloads/release.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
         }
       ]
     },
@@ -259,15 +251,6 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    },
-    {
-      "source": "/hero-clash/release.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
         }
       ]
     },
@@ -352,15 +335,6 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    },
-    {
-      "source": "/last-haven/release.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
         }
       ]
     }
