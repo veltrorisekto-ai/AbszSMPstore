@@ -13,7 +13,7 @@ test('home download links now lead to our games without breaking Dungeon GO down
 });
 test('ABSZ Game Store displays seven real titles with official detail routes and 4 live releases',()=>{
  const html=read('games/index.html');
- for(const name of ['ABSZ Dungeon GO!','My Monsters and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online','LAST HAVEN: Zombie Apocalypse'])assert.ok(html.includes(name),name);
+ for(const name of ['ABSZ Dungeon GO!','My Monsters and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online','LAST HAVEN: Zombie Apocalypse'])assert.ok(html.includes(name.replace(/&/g,'&amp;')),name);
  assert.equal((html.match(/class="store-game-row"/g)||[]).length,14);
  assert.equal((html.match(/data-status="available"/g)||[]).length,12);
  for(const tab of ['games','apps','search','books','you'])assert.ok(html.includes('data-screen="'+tab+'"'));
