@@ -147,6 +147,7 @@ async function presignedUpload(req, body) {
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
+      await requireAdmin(req);
       const heroVideo = await getSetting('hero_video');
       const mode = uploadMode();
       return send(res, 200, {

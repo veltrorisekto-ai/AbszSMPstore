@@ -25,8 +25,8 @@ async function counts() {
 
 async function sendResetEmail(req, admin, token) {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM) return false;
-  const store = await getSetting('store');
-  const base = store.public_url || baseUrl(req);
+  // Always use the canonical production hostname for recovery links.
+  const base = 'https://abszrpg.shop';
   const url = `${base}/admin/reset-password?token=${encodeURIComponent(token)}`;
   const r = await fetch('https://api.resend.com/emails', {
     method:'POST',
@@ -96,6 +96,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') return send(res,405,{ok:false,error:'Method not allowed'});
+    const origin = String(req.headers.origin || '');
+    if (req.headers['sec-fetch-site'] === 'cross-site' || (origin && origin !== 'https://' + req.headers.host)) {
+      return send(res,403,{ok:false,error:'Request origin denied'});
+    }
     const body = await readBody(req);
     const op = body.op;
 

@@ -41,6 +41,10 @@ export default async function handler(req,res){
     const raw=await readRaw(req);
     const sig=String(req.headers['x-signature-ed25519']||'');
     const ts=String(req.headers['x-signature-timestamp']||'');
+    const timestamp = Number(ts);
+    if (!Number.isSafeInteger(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > 300) {
+      return send(res,401,{error:'Expired interaction timestamp'});
+    }
     let cfg;
     const publicKey=process.env.DISCORD_PUBLIC_KEY || (cfg=await discordConfig()).publicKey;
     if(!publicKey||!sig||!ts)return send(res,401,{error:'Invalid signature'});

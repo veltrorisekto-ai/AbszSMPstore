@@ -29,9 +29,7 @@ async function playableHeroVideo(heroVideo) {
 
   return {
     url,
-    duration_seconds: Number(heroVideo.duration_seconds || 0) || null,
-    file_name: heroVideo.file_name || null,
-    source: heroVideo.source || null
+    duration_seconds: Number(heroVideo.duration_seconds || 0) || null
   };
 }
 
