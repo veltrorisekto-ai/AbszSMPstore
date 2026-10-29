@@ -1,8 +1,7 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "a4b0b650-a39f-4b1b-b3aa-70c39bad3060",
-  "purpose": "Verify and compile R11 0.5.3 build 8 Android + Windows exact source, do not publish until checks pass",
-  "checkJob": "929ea588-cb26-4a7f-a471-bd9aebef3614",
-  "nativeJob": "1387c1d7-c974-4d0d-8ce1-7f2a0bdab84f",
-  "sourceHead": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-8"
+  "request_id": "2a276e7b-6b91-4d36-a39a-f54e55f8c343",
+  "purpose": "Run R11 mandatory fog/car parity tests bundled in 0.5.3 build 8",
+  "checkJob": "642b4b4e-fae3-46d2-a2fe-8653fba8a183",
+  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-9"
 }
