@@ -1,11 +1,12 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "a8731c46-f741-4492-ac47-732bdf7ce0c7",
-  "targetVersion": "0.5.3",
-  "targetBuild": 8,
-  "exactSourceHead": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-9",
-  "checkJob": "642b4b4e-fae3-46d2-a2fe-8653fba8a183",
+  "request_id": "52b1fb34-40bf-4695-bfaf-55cce3e9e235",
+  "target": "R11 final revision 9",
+  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-9",
+  "testJob": "642b4b4e-fae3-46d2-a2fe-8653fba8a183",
   "nativeJob": "6c177f21-7831-453f-ad51-3fe31c69da94",
-  "purpose": "Process queued exact-source R11 build after older running HEAD8 native job; require actual test evidence and signatures",
-  "noProductionDeployUntilVerified": true
+  "version": "0.5.3",
+  "build": 8,
+  "requireSourceBoundQA": true,
+  "preventUnverifiedLive": true
 }
