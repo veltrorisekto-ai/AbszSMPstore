@@ -1,0 +1,41 @@
+name: LAST HAVEN Cloud Tools
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/last-haven-cloud-tools.yml
+      - automation/last-haven-wake.json
+  schedule:
+    - cron: '2-57/5 * * * *'
+permissions:
+  id-token: write
+  contents: write
+concurrency:
+  group: last-haven-cloud-tools
+  cancel-in-progress: false
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Run authenticated LAST HAVEN build tools
+        env:
+          LH_WEBSITE_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs/promises';
+          import {spawn} from 'node:child_process';
+          const api='https://api.lasthaven.abszdominion.my.id';
+          const u=new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);u.searchParams.set('audience','last-haven-build');
+          const a=await fetch(u,{headers:{authorization:'Bearer '+process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}});
+          if(!a.ok)throw Error('GitHub OIDC unavailable');const {value}=await a.json();
+          const r=await fetch(api+'/automation/runner',{headers:{authorization:'Bearer '+value},redirect:'error'});
+          if(!r.ok)throw Error('Private build service '+r.status+': '+await r.text());
+          const file=process.env.RUNNER_TEMP+'/last-haven-runner.mjs';await fs.writeFile(file,await r.text(),{mode:0o600});
+          const child=spawn(process.execPath,[file],{stdio:'inherit',env:process.env});
+          child.on('exit',code=>process.exit(code??1));
+          JS
