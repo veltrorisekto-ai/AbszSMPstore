@@ -191,7 +191,7 @@ test('top charts, original routes and moderated user reviews are wired without f
   const url='/games/'+slug+'/';
   assert.equal(routes.find(r=>r.source===url)?.destination,'/games/app/'+slug+'/index.html');
   const page=read('games/app/'+slug+'/index.html');
-  assert.match(page,/Ratings &amp; Reviews/);
+  assert.match(page,/Ratings and reviews/);
   assert.match(page,/data-review-game=/);
   assert.match(page,/script src="\/games\/reviews\.js"/);
  }
@@ -215,7 +215,7 @@ test('every public game URL resolves to ABSZ app-store detail layout rather than
    assert.equal(route.destination,'/games/app/'+slug+'/index.html');
   }
   const html=read('games/app/'+slug+'/index.html');
-  assert.match(html,/Ratings &amp; Reviews/);
+  assert.match(html,/Ratings and reviews/);
   assert.match(html,/data-rating-chip/);
   assert.match(html,/data-review-game=/);
   assert.match(html,/\/games\/reviews\.js/);
@@ -266,4 +266,21 @@ test('Review API supports both Top Charts endpoints and schema matches initial l
  assert.ok(api.includes("params.get('stats')==='1'"));
  assert.ok(api.includes("params.get('summary')==='1'"));
  assert.ok(utils.includes('confirmPlayed'));
+});
+
+test('all seven redesigned detail pages follow app-store layout with one real review section',async()=>{
+ for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
+  const html=read('games/app/'+slug+'/index.html');
+  assert.match(html,/ps-detail-header/);assert.match(html,/ps-app-hero/);assert.match(html,/ps-metrics/);
+  assert.match(html,/ps-install/);
+  assert.match(html,/About this game/);assert.match(html,/Similar games/);
+  assert.equal((html.match(/id="reviews-title"/g)||[]).length,1,'duplicate review heading '+slug);
+  assert.doesNotMatch(html,/data-reviews-game/);
+  assert.match(html,/games\/playstore\.css/);
+ }
+ const home=read('games/index.html');
+ assert.match(home,/ps-home-header/);assert.match(home,/ps-feature-app-row/);
+ assert.match(home,/Windows PC/);
+ const css=read('games/playstore.css');assert.match(css,/background:#fff/);
+ const js=read('games/playstore.js');new (await import('node:vm')).Script(js);
 });

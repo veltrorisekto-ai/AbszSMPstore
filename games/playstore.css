@@ -1,0 +1,137 @@
+/* ABSZ Play-style storefront: independently branded, responsive, white first. */
+:root{--ps-blue:#0b57d0;--ps-text:#202124;--ps-muted:#5f6368;--ps-gray:#edf2f9}
+html{background:#fff}body.ps-market{background:#fff;color:var(--ps-text);font-family:Roboto,"Arial",system-ui,sans-serif;font-size:14px}
+.ps-market .market-main{max-width:1030px;padding:0 22px 95px;background:#fff}
+.ps-market .market-footer{background:#fff;max-width:1030px;padding-top:32px;border-top:1px solid #eef0f3}
+.ps-header{position:sticky;top:0;background:#fff;z-index:35}
+.ps-header-content{max-width:1030px;margin:auto;min-height:77px;padding:0 22px;display:flex;align-items:center;justify-content:space-between}
+.ps-store-brand{display:inline-flex;align-items:center;gap:11px;color:#125bb7;font-size:22px;font-weight:800;letter-spacing:-.5px}
+.ps-brand-symbol{width:44px;height:44px;border-radius:13px;color:white;display:grid;place-items:center;background:linear-gradient(135deg,#2f8bf5,#09b68f);font-weight:900;font-size:27px}
+.ps-header-actions{display:flex;align-items:center;gap:25px}
+.ps-search-icon{color:#414850;display:grid;place-items:center;width:34px;height:38px}
+.ps-profile{height:40px;width:40px;border-radius:50%;color:#fff;background:linear-gradient(135deg,#378be9,#00a393);display:grid;place-items:center;font-size:18px;font-weight:750}
+.ps-market .bottom-tabs{background:#f0f3f8;border:0;box-shadow:none}
+.ps-market .tab-icon{height:33px;width:65px}
+.ps-market .tab-link.selected .tab-icon{background:#c3e7ff}
+.ps-market .tab-link.selected{color:#005d85}
+.ps-market .tab-link{font-size:11px;font-weight:550;color:#454b53}
+.ps-market .category-strip{margin:0 -22px;padding:14px 22px 14px;gap:9px}
+.ps-market .category-pill{background:#f3f6fa;color:#29353f;border:0;min-height:49px;border-radius:50px;padding:11px 18px;font-size:14px;font-weight:630}
+.ps-market .category-pill.selected{background:#d7eaff;color:#0b577a}
+.ps-market .charts-pill{display:inline-flex;align-items:center}
+.ps-market .featured-shelf>.shelf-heading,.ps-market .featured-dots{display:none}
+.ps-market .featured-shelf{margin:0 0 32px}
+.ps-market .featured-track{padding:3px 1px 7px;gap:18px}
+.ps-market .feature-card{height:342px;min-width:min(82vw,650px);border-radius:25px;box-shadow:none}
+.ps-market .feature-shade{background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,.18) 64%,transparent)}
+.ps-market .feature-caption{bottom:20px;left:23px;right:24px}
+.ps-market .feature-label,.ps-market .feature-caption p,.ps-market .feature-cta{display:none}
+.ps-market .feature-caption h3{font-size:29px;font-weight:700;margin:0;letter-spacing:-.45px}
+.ps-feature-app-row{display:flex;align-items:center;gap:14px;padding:13px 2px 4px}
+.ps-feature-app-row>img{width:68px;height:68px;border-radius:16px;object-fit:cover;flex:none}
+.ps-feature-info{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
+.ps-feature-info strong{font-size:17px;font-weight:550;line-height:1.2}
+.ps-feature-info small{font-size:13px;color:#5f6368}
+.ps-feature-action{display:inline-grid;place-items:center;min-width:81px;min-height:39px;border-radius:25px;background:#0b57d0;color:#fff;font-size:13px;font-weight:700}
+.ps-home-page .shelf-heading h2{font-size:21px;font-weight:650;letter-spacing:0}
+.ps-home-page .shelf-heading{margin:0 0 18px}
+.ps-home-page .shelf-heading>span{color:#5f6368}
+.ps-home-page .compact-track{gap:16px}
+.ps-home-page .compact-game .tile-icon{box-shadow:none}
+.ps-home-page .game-row-list{border:0;border-radius:0}
+.ps-home-page .store-game-row{padding:13px 2px;border-color:#f0f0f0}
+.ps-home-page .store-game-row:hover{background:#f8faff}
+.ps-home-page .row-icon{width:66px;height:66px}
+.ps-home-page .row-info strong{font-weight:550;font-size:15px}
+.ps-home-page .row-info small{font-size:12px}
+.ps-home-page .row-arrow{color:#6b7280}
+.ps-home-page .page-intro,.ps-home-page .chart-teaser{display:none}
+.ps-detail-header .ps-header-content{min-height:68px}
+.ps-back{height:45px;width:45px;display:grid;place-items:center;color:#3c4043;margin-left:-10px}
+.ps-app-actions{position:relative}
+.ps-more-button{border:0;color:#454a4e;background:none;font-size:27px;width:45px;height:45px;display:grid;place-items:center}
+.ps-more-menu{position:absolute;top:46px;right:0;min-width:190px;background:#fff;box-shadow:0 12px 35px #0002;border:1px solid #dadce0;border-radius:13px;padding:6px;z-index:42}
+.ps-more-menu a,.ps-more-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#202124;padding:11px 12px;font-size:14px;border-radius:8px}
+.ps-more-menu a:hover,.ps-more-menu button:hover{background:#f1f4f9}
+.ps-market .ps-detail-main{max-width:910px;padding-top:34px}
+.ps-app-hero{padding:4px 0 0}
+.ps-publisher{font-size:17px;color:#0b57d0;font-weight:600;margin:0 0 8px}
+.ps-app-hero h1{font-size:clamp(40px,6.7vw,55px);font-weight:450;line-height:1.13;letter-spacing:-1px;margin:0 0 8px}
+.ps-app-genre{font-size:14px;color:#606972;margin:0 0 24px}
+.ps-metrics{display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;margin:0 -5px;padding:4px 0 14px}
+.ps-app-icon{flex:0 0 84px;width:84px;height:84px;border-radius:18px;overflow:hidden;margin:0 17px 0 5px;box-shadow:0 3px 7px #0002;background:#e7ebf0}
+.ps-app-icon img,.ps-app-icon .app-icon{width:100%;height:100%;object-fit:cover}
+.ps-app-icon .icon-fallback{font-size:43px}
+.ps-metric{flex:1 0 auto;min-width:108px;text-align:left;border-right:1px solid #e5e5e5;padding:2px 18px 2px 0;margin-right:17px}
+.ps-metric:last-child{border:0}
+.ps-metric strong{font-size:16px;font-weight:700;display:block;white-space:nowrap}
+.ps-metric.review-rating-chip strong{color:#303237}
+.ps-metric small{color:#62696f;font-size:12px;display:block;margin-top:5px;white-space:nowrap}
+.ps-market .install-row.platform-installs{display:block;margin:10px 0 5px}
+.ps-install-split{display:flex;align-items:stretch;gap:3px}
+.ps-market .platform-installs .install-button.android-install{display:grid;place-items:center;flex:1;width:auto;min-width:0;min-height:55px;border-radius:40px 8px 8px 40px;background:#0b57d0;box-shadow:none;color:white;font-size:16px;font-weight:650;padding:12px 20px}
+.ps-install-toggle{border:0;border-radius:8px 40px 40px 8px;background:#0b57d0;color:#fff;font-size:28px;line-height:1;width:64px;min-height:55px;flex:none}
+.ps-windows-options{margin-top:13px}
+.ps-market .platform-installs .windows-install{display:grid;place-items:center;width:100%;background:#f7c962;color:#3c2f14;box-shadow:none;border-radius:28px;min-height:50px;font-weight:650}
+.ps-market .install-row .install-hint{color:#656a70;font-size:12px;margin:10px 0 0;text-align:left}
+.ps-market .install-row:not(.platform-installs) .install-button.disabled{background:#e7ebf1;color:#66717e;border-radius:29px;width:100%;max-width:480px;box-shadow:none}
+.ps-pc-line{display:flex;align-items:center;gap:13px;margin:27px 0 35px;font-size:15px;color:#505860;line-height:1.5}
+.ps-pc-badge{font-size:23px;color:#168847;flex:none}
+.ps-pc-line>span:nth-child(2){flex:1}
+.ps-pc-line button{border:0;background:#eef2fa;color:#46505e;border-radius:50%;height:37px;width:37px;font-size:26px;flex:none}
+.ps-detail-main .detail-section{padding:31px 0;border-top:0;border-bottom:0}
+.ps-detail-main .detail-section+.detail-section{margin-top:4px}
+.ps-detail-main .section-head h2{font-size:24px;font-weight:650;letter-spacing:-.3px;color:#202124}
+.ps-detail-main .section-head{align-items:center}
+.ps-detail-main .section-head>a{color:#0b57d0}
+.ps-detail-main .screenshot-track{margin:0 -22px;padding:4px 22px 18px;gap:13px}
+.ps-detail-main .screenshot-tile{flex-basis:185px}
+.ps-detail-main .screenshot-tile img{height:310px;border-radius:13px;box-shadow:none}
+.ps-detail-main .screenshot-tile span{font-size:11px;color:#606972}
+.ps-detail-main .art-disclaimer{font-size:11px;color:#7f858e}
+.ps-detail-main .about-lead{color:#353a40!important;font-size:22px!important;line-height:1.5!important;font-weight:450}
+.ps-detail-main .detail-section p{color:#5a626b;font-size:15px;line-height:1.7}
+.ps-next{display:grid;place-items:center;background:#edf2fb;border-radius:50%;width:40px;height:40px;color:#3d4854;font-size:20px}
+.ps-detail-main .tag-list span{border:1px solid #d2d4d8;background:white;border-radius:10px;color:#4e5863;font-size:14px;font-weight:500;padding:8px 15px}
+.ps-detail-main .feature-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ps-detail-main .feature-list li{color:#515c65;font-size:14px}
+.ps-detail-main .review-overview{max-width:630px}
+.ps-detail-main .review-score strong{font-size:42px;color:#202124;font-weight:500}
+.ps-detail-main .review-card{border:0;border-bottom:1px solid #eceef1;border-radius:0;padding:15px 2px}
+.ps-detail-main .review-form{border:1px solid #e3e6eb;box-shadow:none}
+.ps-detail-main .compact-track{padding-bottom:10px}
+.ps-detail-main .compact-game .tile-icon{border-radius:22px;box-shadow:none}
+.ps-detail-main .compact-game strong{font-size:14px}
+.ps-market .market-footer{display:none}
+.ps-visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:700px){
+.ps-market .market-main{padding:0 22px 108px}
+.ps-header-content{min-height:76px;padding:0 22px}
+.ps-home-header .ps-store-brand .ps-brand-name{font-size:20px}
+.ps-market .category-strip{margin:0 -22px;padding:16px 22px 20px}
+.ps-market .category-pill{min-height:46px;padding:10px 17px;font-size:14px}
+.ps-market .featured-track{margin:0 -22px;padding:0 22px 5px;gap:17px}
+.ps-market .feature-card{min-width:calc(100vw - 73px);height:330px;border-radius:23px}
+.ps-market .feature-caption h3{font-size:25px}
+.ps-feature-app-row{padding:14px 0 2px}
+.ps-feature-app-row>img{width:62px;height:62px;border-radius:15px}
+.ps-feature-info strong{font-size:15px}
+.ps-feature-info small{font-size:12px}
+.ps-feature-action{font-size:12px;min-width:74px;min-height:38px}
+.ps-market .ps-detail-main{padding-top:25px}
+.ps-app-hero h1{font-size:42px}
+.ps-publisher{font-size:16px}
+.ps-app-icon{flex-basis:83px;width:83px;height:83px;margin-right:16px}
+.ps-metrics{margin-right:-22px}
+.ps-metric{min-width:110px;padding-right:15px;margin-right:15px}
+.ps-pc-line{margin:24px 0 20px}
+.ps-detail-main .detail-section{padding:27px 0}
+.ps-detail-main .screenshot-track{margin:0 -22px;padding:0 22px 14px}
+.ps-detail-main .screenshot-tile{flex-basis:162px}
+.ps-detail-main .screenshot-tile img{height:270px}
+.ps-detail-main .section-head h2{font-size:23px}
+.ps-detail-main .feature-list{grid-template-columns:1fr}
+.ps-market .bottom-tabs{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+}
+@media(max-width:380px){.ps-app-hero h1{font-size:37px}.ps-metric{min-width:100px}.ps-feature-app-row>img{width:55px;height:55px}.ps-market .feature-card{height:290px}}
+@media(min-width:950px){.ps-market .bottom-tabs{max-width:100%;border-radius:0;border-top:1px solid #eef1f4;position:fixed;bottom:0}.ps-market .market-main{padding-bottom:130px}.ps-market .feature-card{min-width:600px}}
