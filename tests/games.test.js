@@ -252,9 +252,18 @@ test('reviews are submitted by users, moderated by real site admins and not fabr
  assert.equal(typeof utils.validateReview({...valid,confirmPlayed:false}),'string');
  const api=read('api/game-reviews.js'),ui=read('games/reviews.js'),admin=read('games/moderate.js');
  assert.match(api,/requireAdmin\(req\)/);assert.match(api,/status='approved'/);
- assert.match(api,/ON CONFLICT\(game_slug,ip_hash,submit_day\) DO NOTHING/);
+ assert.match(api,/ON CONFLICT\(game_slug,fingerprint,day_utc\) DO NOTHING/);
  assert.match(api,/CREATE TABLE IF NOT EXISTS absz_game_reviews/);
  assert.match(ui,/fetch\('\/api\/game-reviews/);
  assert.match(admin,/moderate=1/);
  assert.doesNotMatch(read('games/index.html'),/55M reviews|500M downloads/);
+});
+
+test('Review API supports both Top Charts endpoints and schema matches initial live table',()=>{
+ const api=read('api/game-reviews.js'),utils=read('api/_game-review-utils.js');
+ for(const field of ['display_name','body','fingerprint','day_utc'])assert.ok(api.includes(field),field);
+ for(const wrong of ['reviewer_name','review_text','ip_hash','submit_day'])assert.ok(!api.includes(wrong),wrong);
+ assert.ok(api.includes("params.get('stats')==='1'"));
+ assert.ok(api.includes("params.get('summary')==='1'"));
+ assert.ok(utils.includes('confirmPlayed'));
 });
