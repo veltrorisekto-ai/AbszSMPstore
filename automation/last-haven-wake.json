@@ -1,7 +1,8 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "e3a7f526-04b8-4ae1-ab65-cee14668d919",
-  "purpose": "Run R11 exact-head generator fog/car regression tests",
-  "job": "aa99d9eb-f5be-4d15-9e9d-5cd7557c89b8",
-  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-7"
+  "request_id": "a4b0b650-a39f-4b1b-b3aa-70c39bad3060",
+  "purpose": "Verify and compile R11 0.5.3 build 8 Android + Windows exact source, do not publish until checks pass",
+  "checkJob": "929ea588-cb26-4a7f-a471-bd9aebef3614",
+  "nativeJob": "1387c1d7-c974-4d0d-8ce1-7f2a0bdab84f",
+  "sourceHead": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-8"
 }
