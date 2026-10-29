@@ -1,1 +1,7 @@
-{"request":"cloud-tools-native-pipeline-acceptance-20261030-final-layout-v4","purpose":"Tooling only; keep current game release and player data"}
+{
+  "game": "LAST HAVEN",
+  "request_id": "25c5f25f-8d0b-41ce-a8e3-ddc3d4119309",
+  "purpose": "Start exact-source R11 signed Android and Windows native build",
+  "job": "869eb617-5f9a-4b48-8754-a45e1980a56d",
+  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-6"
+}
