@@ -1,1 +1,8 @@
-{"request":"cloud-tools-native-pipeline-acceptance-20261030-layout-v2","purpose":"Tooling verification only; no gameplay changes or promotion"}
+{
+  "game": "LAST HAVEN",
+  "request_id": "f3954e45-39cb-4462-a2d5-6ed80a74341a",
+  "purpose": "Wake queued studio R11 parity check builds",
+  "workspace": "ai/r11-original-parity-20261030",
+  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-2",
+  "job": "74eb4ff5-0881-4fe0-aa7f-a38cb83f9724"
+}
