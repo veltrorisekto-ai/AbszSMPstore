@@ -126,3 +126,11 @@ test('Hero Clash Android APK button is green and Windows PC button is gold with 
  assert.match(css,/#pc-download \{[\s\S]*?background:linear-gradient\(125deg,#fff3b7/);
  assert.match(css,/#apk-download,\s*\.hc-page #pc-download \{[\s\S]*?background:linear-gradient\(125deg,#a2ffd0/);
 });
+
+test('LAST HAVEN public page has basic player guidance without revealing implementation details',()=>{
+ const page=read('last-haven/index.html');
+ for(const route of ['/downloads/last-haven/android','/downloads/last-haven/windows'])assert.ok(page.includes('href="'+route+'"'));
+ for(const wording of ['What kind of game is LAST HAVEN?','Can I play with friends?','Which devices are supported?','Where can I find updates or get help?'])assert.ok(page.includes(wording));
+ for(const privateDetail of [/device identity/i,/signed update information/i,/server and linked/i,/public matchmaking creates/i,/full matches use separate maps/i,/LAST-HAVEN\.exe/i,/Update &amp; Play/i,/physical Android and Windows gameplay testing/i])assert.doesNotMatch(page,privateDetail);
+ assert.equal((page.match(/class="lh-platform /g)||[]).length,2);
+});
