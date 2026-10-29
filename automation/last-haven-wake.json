@@ -1,10 +1,10 @@
 {
   "game": "LAST HAVEN",
-  "request_id": "7752af9e-580f-4813-a4e0-9954fd5b60a5",
-  "purpose": "Build R11 revision 11 after exact-head CI check passed with 10 suites and six client integration assertions",
-  "head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-11",
-  "nativeJob": "badb0636-c8ab-4484-bde9-752cf6292306",
-  "version": "0.5.3",
-  "build": 8,
-  "noPublishWithoutSourceBoundVerification": true
+  "request_id": "3ee5b779-a65d-40bb-aa5c-1ed05e39678a",
+  "intent": "Process existing verified release publication request for signed build 0.5.3 build 8 while preserving original game source and player data",
+  "job_id": "badb0636-c8ab-4484-bde9-752cf6292306",
+  "publication_request": "d10a9b6a-9a3d-457a-a119-a7dc35d96cbe",
+  "source_head": "fc5b2d14-f603-4781-9790-e2d3c23ca7dd-11",
+  "source_fingerprint": "ba221509f79882dff010e91d40fafee7827763f1fad68089f1ca3a1c356defaf",
+  "safety": "No destructive migration, do not remove existing game features, preserve solo-game code and current player saves. Do not promote release if checks fail."
 }
