@@ -134,3 +134,13 @@ test('LAST HAVEN public page has basic player guidance without revealing impleme
  for(const privateDetail of [/device identity/i,/signed update information/i,/server and linked/i,/public matchmaking creates/i,/full matches use separate maps/i,/LAST-HAVEN\.exe/i,/Update &amp; Play/i,/physical Android and Windows gameplay testing/i])assert.doesNotMatch(page,privateDetail);
  assert.equal((page.match(/class="lh-platform /g)||[]).length,2);
 });
+
+test('My Monsters and Dungeon public page hides technical release links while preserving both downloads',()=>{
+ const page=read('monster-dungeon/index.html');
+ assert.doesNotMatch(page,/Download checksums|Release details/);
+ assert.doesNotMatch(page,/href="\/monster-dungeon\/(?:SHA256SUMS\.txt|release\.json)"/);
+ assert.doesNotMatch(page,/System WebView|WebGL-capable|dedicated Edge app window|Game assets load online/);
+ assert.match(page,/href="https:\/\/mmd-api\.abszsmp\.online\/releases\/0\.2\.0\/My-Monsters-and-Dungeon-0\.2\.0\.apk"/);
+ assert.match(page,/href="https:\/\/mmd-api\.abszsmp\.online\/releases\/0\.2\.0\/My-Monsters-and-Dungeon-0\.2\.0-PC-Launcher-x64\.zip"/);
+ assert.match(page,/Installation guide/);
+});
