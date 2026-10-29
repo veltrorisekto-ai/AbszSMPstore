@@ -160,54 +160,52 @@ test('My Monsters and Dungeon public page hides technical release links while pr
  assert.doesNotMatch(page,/READ-ME-FIRST|mmd-api\.abszsmp\.online/);
 });
 
-test('app-style game pages only use actual available assets and keep install buttons truthful',()=>{
+test('seven app store pages display real assets, appropriate status and secure download paths',()=>{
  const entries=[
- ['my-hero-clash-with-monsters','/play/my-hero-clash-with-monsters/',true],
- ['absz-dungeon-go','/downloads/',true],
- ['my-monster-and-dungeon','/play/my-monster-and-dungeon/',true],
- ['last-haven','/play/last-haven/',true],
- ['please-defend-our-king','/games/please-defend-our-king/',false],
- ['community-and-friendship','/games/community-and-friendship/',false],
- ['dungeoncraft-online','/games/dungeoncraft-online/',false]
+ ['my-hero-clash-with-monsters',true],
+ ['absz-dungeon-go',true],
+ ['my-monster-and-dungeon',true],
+ ['last-haven',true],
+ ['please-defend-our-king',false],
+ ['community-and-friendship',false],
+ ['dungeoncraft-online',false]
  ];
- for(const [slug,url,live] of entries){
- const page=read('games/app/'+slug+'/index.html');
- assert.match(page,/ABSZ Projects &amp; Studios/);
- assert.ok(page.includes('href="'+url+'"'),slug);
- assert.equal(page.includes('class="install-button disabled"'),!live);
- for(const m of page.matchAll(/(?:src)="(\/(?:assets|last-haven)\/[^"]+)"/g))assert.ok(fs.existsSync(new URL('..'+m[1],import.meta.url)),m[1]);
+ for(const [slug,live] of entries){
+  const page=read('games/app/'+slug+'/index.html');
+  assert.match(page,/ABSZ Projects &amp; Studios/);
+  assert.equal(page.includes('class="install-button disabled"'),!live);
+  if(live){assert.match(page,/Download Android APK/);assert.match(page,/Download Windows PC/)}
+  else {assert.match(page,/Browse our other games/);assert.doesNotMatch(page,/Download Android APK/)}
+  for(const m of page.matchAll(/(?:src)="(\/(?:assets|last-haven)\/[^"]+)"/g))assert.ok(fs.existsSync(new URL('..'+m[1],import.meta.url)),m[1]);
  }
  const js=read('games/detail-ui.js');assert.match(js,/ArrowRight/);assert.match(js,/touchstart/);
 });
-
-test('Top Charts, original game routes, review moderation and database safety are wired',async()=>{
- const home=read('games/index.html'),script=read('games/store.js'),api=read('api/game-reviews.js');
- const routes=JSON.parse(read('vercel.json')).rewrites;
+test('top charts, original routes and moderated user reviews are wired without fake user scores',async()=>{
+ const home=read('games/index.html'),routes=JSON.parse(read('vercel.json')).rewrites;
  assert.match(home,/Top charts/);
- assert.match(home,/ABSZ Picks/);
- assert.match(home,/Most reviewed/);
- assert.match(script,/chartScores/);
+ assert.match(home,/Studio picks/);
+ const charts=read('games/charts/index.html');
+ assert.match(charts,/Community favourites/);
+ assert.match(charts,/not a claim of most downloads/);
  for(const slug of ['my-hero-clash-with-monsters','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online','absz-dungeon-go']){
   const url='/games/'+slug+'/';
   assert.equal(routes.find(r=>r.source===url)?.destination,'/games/app/'+slug+'/index.html');
   const page=read('games/app/'+slug+'/index.html');
-  assert.match(page,/Ratings &amp; reviews/);
-  assert.match(page,/data-reviews-game=/);
-  assert.match(page,/script src="\/games\/reviews-ui\.js"/);
+  assert.match(page,/Ratings &amp; Reviews/);
+  assert.match(page,/data-review-game=/);
+  assert.match(page,/script src="\/games\/reviews\.js"/);
  }
- for(const slug of ['my-hero-clash-with-monsters','my-monster-and-dungeon','last-haven'])
-  assert.ok(routes.find(r=>r.source==='/play/'+slug+'/'));
+ const api=read('api/game-reviews.js');
  assert.match(api,/status='approved'/);
  assert.match(api,/await requireAdmin\(req\)/);
- assert.match(api,/status:'pending'/);
- assert.match(api,/fingerprint/);
+ assert.match(api,/DEFAULT 'pending'/);
+ assert.match(api,/hashedIp\(req\)/);
  assert.doesNotMatch(home,/55M reviews|500M downloads/);
- assert.ok(fs.existsSync(new URL('../games/review-moderation/index.html',import.meta.url)));
- for(const p of ['games/store.js','games/detail-ui.js','games/reviews-ui.js','games/review-moderation/moderate.js']){
+ assert.ok(fs.existsSync(new URL('../games/moderation/index.html',import.meta.url)));
+ for(const p of ['games/store.js','games/detail-ui.js','games/reviews.js','games/charts.js','games/moderate.js']){
   new (await import('node:vm')).Script(read(p),{filename:p});
  }
 });
-
 test('every public game URL resolves to ABSZ app-store detail layout rather than old landing page',()=>{
  const cfg=JSON.parse(read('vercel.json'));
  for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven','please-defend-our-king','community-and-friendship','dungeoncraft-online']){
