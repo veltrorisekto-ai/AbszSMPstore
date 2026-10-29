@@ -163,3 +163,5 @@ a{color:inherit;text-decoration:none}a:focus-visible{outline:2px solid #53e4ff;o
 @media(max-width:760px){.game-card.hero-game .card-art{height:190px}.game-card.hero-game .card-content{background:linear-gradient(155deg,#112e34,#091629 90%)}}
 
 .monster-live-art{background-image:linear-gradient(0deg,#153c3077,transparent),url("/assets/monster-dungeon/keyart.webp")!important;background-size:cover!important;background-position:center!important}.monster-live-art .game-emblem{opacity:0}
+
+.game-card.last-haven .last-haven-art{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 10%,#745044,#231a25 65%,#121019)}.game-card.last-haven .last-haven-art img{width:130px;height:130px;filter:drop-shadow(0 10px 20px #0008)}.game-card.last-haven:hover{border-color:#b68c73}

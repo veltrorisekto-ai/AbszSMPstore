@@ -11,11 +11,11 @@ test('home download links now lead to our games without breaking Dungeon GO down
   assert.match(downloads,/href="\/downloads\/windows"/);
   assert.match(downloads,/href="\/games\/">All Games/);
 });
-test('the catalogue includes six games, with Dungeon GO, Hero Clash and Monsters marked available',()=>{
+test('the catalogue includes seven games, with LAST HAVEN and three other games available',()=>{
   const html=read('games/index.html');
-  for(const name of ['ABSZ Dungeon GO!','My Monsters and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online']) assert.ok(html.includes(name),name);
-  assert.equal((html.match(/class="game-card /g)||[]).length,6);
-  assert.equal((html.match(/status-live/g)||[]).length,3);
+  for(const name of ['ABSZ Dungeon GO!','My Monsters and Dungeon','My Hero Clash With Monster','Please Defend Our King!','Community & Friendship','DungeonCraft Online','LAST HAVEN: Zombie Apocalypse']) assert.ok(html.includes(name),name);
+  assert.equal((html.match(/class="game-card /g)||[]).length,7);
+  assert.equal((html.match(/status-live/g)||[]).length,4);
   assert.match(html,/href="\/downloads\/"/);
 });
 test('unreleased games have routed detail pages rather than broken download URLs',()=>{
@@ -35,7 +35,7 @@ test('Hero Clash release metadata describes the verified public APK and resource
  assert.equal(r.verification.signatureVerified,true);assert.equal(r.verification.debuggable,false);assert.equal(r.verification.playProtectCleared,false);assert.equal(r.verification.physicalDeviceTested,false);assert.deepEqual(r.android.permissions,['android.permission.INTERNET']);assert.ok(Number.isSafeInteger(r.resources.downloadBytes)&&r.resources.downloadBytes>10000000);for(const path of ['/games/my-hero-clash-with-monsters','/games/my-hero-clash-with-monsters/'])assert.ok(cfg.headers.some(h=>h.source===path&&h.headers.some(v=>v.key==='Content-Security-Policy')));
 });
 
-test('mobile game catalogue keeps six playable links but prevents Hero Clash hero-layout collision',()=>{
+test('mobile game catalogue keeps seven game links but prevents Hero Clash hero-layout collision',()=>{
  const html=read('games/index.html'), css=read('games/games.css'), heroCss=read('hero-clash/style.css');
  assert.match(html,/class="game-card hero-game featured"/);
  assert.doesNotMatch(html,/class="game-card hero featured"/);
