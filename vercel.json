@@ -139,12 +139,12 @@
   "redirects": [
     {
       "source": "/downloads/last-haven/android",
-      "destination": "https://assets.lasthaven.abszdominion.my.id/releases/android/0.2.0/LAST-HAVEN-0.2.0-Android.apk",
+      "destination": "https://assets.lasthaven.abszdominion.my.id/releases/android/0.2.1/LAST-HAVEN-0.2.1-Android.apk",
       "permanent": false
     },
     {
       "source": "/downloads/last-haven/windows",
-      "destination": "https://assets.lasthaven.abszdominion.my.id/releases/windows/0.2.0/LAST-HAVEN-0.2.0-Windows-x64.zip",
+      "destination": "https://assets.lasthaven.abszdominion.my.id/releases/windows/0.2.1/LAST-HAVEN-0.2.1-Windows-x64.zip",
       "permanent": false
     },
     {
