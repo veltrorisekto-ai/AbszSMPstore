@@ -16,20 +16,76 @@
   },
   "rewrites": [
     {
-      "source": "/games/last-haven",
+      "source": "/games/dungeoncraft-online/",
+      "destination": "/games/app/dungeoncraft-online/index.html"
+    },
+    {
+      "source": "/games/dungeoncraft-online",
+      "destination": "/games/app/dungeoncraft-online/index.html"
+    },
+    {
+      "source": "/games/community-and-friendship/",
+      "destination": "/games/app/community-and-friendship/index.html"
+    },
+    {
+      "source": "/games/community-and-friendship",
+      "destination": "/games/app/community-and-friendship/index.html"
+    },
+    {
+      "source": "/games/please-defend-our-king/",
+      "destination": "/games/app/please-defend-our-king/index.html"
+    },
+    {
+      "source": "/games/please-defend-our-king",
+      "destination": "/games/app/please-defend-our-king/index.html"
+    },
+    {
+      "source": "/games/absz-dungeon-go/",
+      "destination": "/games/app/absz-dungeon-go/index.html"
+    },
+    {
+      "source": "/games/absz-dungeon-go",
+      "destination": "/games/app/absz-dungeon-go/index.html"
+    },
+    {
+      "source": "/play/last-haven/",
       "destination": "/last-haven/index.html"
+    },
+    {
+      "source": "/play/last-haven",
+      "destination": "/last-haven/index.html"
+    },
+    {
+      "source": "/play/my-monster-and-dungeon/",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
+      "source": "/play/my-monster-and-dungeon",
+      "destination": "/monster-dungeon/index.html"
+    },
+    {
+      "source": "/play/my-hero-clash-with-monsters/",
+      "destination": "/hero-clash/index.html"
+    },
+    {
+      "source": "/play/my-hero-clash-with-monsters",
+      "destination": "/hero-clash/index.html"
+    },
+    {
+      "source": "/games/last-haven",
+      "destination": "/games/app/last-haven/index.html"
     },
     {
       "source": "/games/last-haven/",
-      "destination": "/last-haven/index.html"
+      "destination": "/games/app/last-haven/index.html"
     },
     {
       "source": "/games/my-monster-and-dungeon",
-      "destination": "/monster-dungeon/index.html"
+      "destination": "/games/app/my-monster-and-dungeon/index.html"
     },
     {
       "source": "/games/my-monster-and-dungeon/",
-      "destination": "/monster-dungeon/index.html"
+      "destination": "/games/app/my-monster-and-dungeon/index.html"
     },
     {
       "source": "/games/my-monsters-and-dungeon",
@@ -41,11 +97,11 @@
     },
     {
       "source": "/games/my-hero-clash-with-monsters",
-      "destination": "/hero-clash/index.html"
+      "destination": "/games/app/my-hero-clash-with-monsters/index.html"
     },
     {
       "source": "/games/my-hero-clash-with-monsters/",
-      "destination": "/hero-clash/index.html"
+      "destination": "/games/app/my-hero-clash-with-monsters/index.html"
     },
     {
       "source": "/_channels/android/alpha.json",

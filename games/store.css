@@ -55,3 +55,39 @@
 @media(min-width:950px){.bottom-tabs{position:relative;max-width:540px;margin:0 auto;border:1px solid #e4eaf2;border-radius:18px 18px 0 0}.market-footer{padding-bottom:28px}.feature-card{min-width:530px}.store-page .market-main{padding-bottom:45px}}
 @media(max-width:700px){.market-header-inner{height:64px;padding:0 16px;gap:11px}.market-brand{font-size:16px}.brand-mark{height:32px;width:32px;font-size:18px}.top-links{display:none}.top-search{margin-left:auto}.top-profile{width:36px;height:36px}.market-main{padding:20px 17px 116px}.page-intro{margin:7px 0 20px}.page-intro h1{font-size:29px;line-height:1.1}.page-intro p{font-size:13px}.category-strip{margin:6px -17px 24px;padding:0 17px 3px}.category-pill{font-size:12px;padding:10px 15px}.shelf{margin-bottom:31px}.shelf-heading h2,.section-head h2{font-size:21px}.feature-card{height:232px;min-width:calc(100vw - 55px);border-radius:18px}.featured-track{margin-right:-17px;padding-right:17px;gap:12px}.feature-caption{left:18px;right:18px;bottom:16px}.feature-caption h3{font-size:21px}.feature-caption p{font-size:12px}.feature-label{font-size:9px}.feature-cta{font-size:11px;padding:8px 13px}.compact-track{margin-right:-17px;padding-right:17px;gap:12px}.compact-game{width:124px}.compact-game .tile-icon{width:120px;height:120px;border-radius:19px}.store-game-row{padding:13px 12px;gap:12px;min-height:85px}.row-icon{width:59px;height:59px;border-radius:14px}.row-info strong{font-size:13px}.row-info small{font-size:11px}.row-meta{font-size:10px;gap:7px}.row-meta span:last-child{display:none}.row-arrow{font-size:25px}.market-footer{display:none}.secondary-screen .page-intro{margin-bottom:24px}.detail-main{padding-top:8px}.app-identity{gap:14px;align-items:flex-start}.identity-icon{width:89px;height:89px;border-radius:21px}.identity-text h1{font-size:27px;margin:6px 0}.identity-text p{font-size:12px}.game-facts{margin:21px 0 18px}.game-facts>div{padding:13px 7px}.game-facts strong{font-size:11px}.game-facts small{font-size:10px}.install-row{display:block;margin-bottom:25px}.install-button{width:100%;font-size:14px}.install-hint{display:block;margin:9px 0;text-align:center}.install-row .outline-link{margin-top:11px;width:100%}.detail-section{padding:22px 0}.screenshot-tile{flex-basis:160px}.screenshot-tile img{height:258px;border-radius:14px}.feature-list{grid-template-columns:1fr;gap:5px}.shot-dialog{padding:10px;max-height:96dvh}.shot-dialog-frame img{max-width:calc(100% - 68px);max-height:77dvh}.shot-dialog-frame button{width:26px;height:36px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.featured-track{scroll-behavior:auto}}
+
+/* ABSZ Charts and real-user reviews, styled alongside the app-store UI. */
+.charts-pill{display:inline-flex;align-items:center;text-decoration:none;color:#185a9f}
+.chart-switch{display:flex;gap:9px;overflow-x:auto;padding:2px 0 13px;scrollbar-width:none}
+.chart-explanation{color:#66778b;font-size:12px;margin:3px 0 17px;line-height:1.6}
+.chart-list{background:#fff;border:1px solid #e5ebf3;border-radius:19px;overflow:hidden}
+.chart-entry{display:flex;align-items:center;gap:14px;padding:17px 15px;border-bottom:1px solid #ecf0f4}
+.chart-entry:last-child{border-bottom:0}.chart-entry:hover{background:#f5f9ff}
+.chart-entry[hidden]{display:none}.chart-position{color:#728198;font-size:17px;width:22px;text-align:center;font-weight:800;flex:none}
+.chart-entry>img{height:62px;width:62px;object-fit:cover;border-radius:15px;flex:none;background:#edf1f6}
+.chart-info{display:flex;flex-direction:column;flex:1;min-width:0;gap:3px}.chart-info strong{font-size:14px;line-height:1.25}.chart-info small{font-size:11px;color:#728399}.chart-rating{font-size:11px;color:#286e98}
+.chart-arrow{color:#6e8198;font-size:24px}.chart-empty{margin:18px 0;color:#64758a;font-size:13px}
+.review-summary{display:flex;align-items:center;gap:24px;padding:15px 0 23px}
+.review-score{display:flex;flex-direction:column;min-width:95px}
+.review-score strong{font-size:43px;line-height:1;letter-spacing:-2px}
+.review-score small{font-size:11px;color:#748397}
+.review-bars{flex:1;display:flex;flex-direction:column;gap:5px}
+.review-bar{display:flex;align-items:center;gap:10px;font-size:11px;color:#64778b}
+.review-bar>i{display:block;flex:1;height:7px;border-radius:20px;background:#e3eaf1;overflow:hidden}
+.review-bar>i>b{display:block;height:100%;width:0;background:#2a77da;border-radius:20px}
+.review-lead{margin:6px 0 15px;font-size:13px;color:#657589!important}
+.review-action{border:1px solid #bdd5f5;background:#eaf3ff;color:#145caa;border-radius:12px;padding:11px 16px;font-weight:750;font-size:13px}
+.review-form{display:grid;gap:12px;border:1px solid #dfe7f1;border-radius:17px;padding:16px;background:#fff;margin:16px 0}
+.review-form label{font-size:12px;color:#486179;font-weight:800;display:grid;gap:6px}
+.review-form input,.review-form textarea,.review-form select{border:1px solid #cad8e6;border-radius:9px;padding:10px 12px;font-size:14px;line-height:1.5;width:100%;font-family:inherit;color:#1e3247;background:#fff}
+.review-form textarea{min-height:100px;resize:vertical}.review-form .honeypot{position:absolute!important;left:-10000px!important;max-height:1px!important;overflow:hidden!important}
+.review-submit{background:#1765ca;color:white;border:0;border-radius:10px;padding:12px 19px;font-weight:800}
+.review-hint,.review-feedback{font-size:11px!important;color:#75879a!important;margin:0!important}
+.review-feedback.error{color:#ad384b!important}.review-feedback.success{color:#21785b!important}
+.review-list{display:grid;gap:10px;margin:18px 0}.review-card{background:#fff;border:1px solid #e4eaf1;border-radius:15px;padding:17px}
+.review-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.review-card-head strong{font-size:14px}.review-date{font-size:11px;color:#718396}
+.review-stars{color:#d18c16;letter-spacing:2px;margin:8px 0 5px;font-size:14px}
+.review-card p{margin:6px 0 0!important;white-space:pre-wrap;overflow-wrap:anywhere;color:#42566b!important;font-size:13px!important}
+.review-empty{border:1px dashed #d3dfeb;color:#738497;background:#f9fbfe;border-radius:14px;padding:21px;text-align:center;font-size:12px}
+@media(max-width:700px){.chart-entry{gap:9px;padding:13px 9px}.chart-entry>img{height:54px;width:54px;border-radius:12px}.chart-info strong{font-size:12px}.review-summary{gap:13px}.review-score{min-width:75px}.review-score strong{font-size:38px}.review-form{padding:13px}}
