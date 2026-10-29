@@ -135,3 +135,20 @@ html{background:#fff}body.ps-market{background:#fff;color:var(--ps-text);font-fa
 }
 @media(max-width:380px){.ps-app-hero h1{font-size:37px}.ps-metric{min-width:100px}.ps-feature-app-row>img{width:55px;height:55px}.ps-market .feature-card{height:290px}}
 @media(min-width:950px){.ps-market .bottom-tabs{max-width:100%;border-radius:0;border-top:1px solid #eef1f4;position:fixed;bottom:0}.ps-market .market-main{padding-bottom:130px}.ps-market .feature-card{min-width:600px}}
+
+/* Top Charts uses the same compact, clean storefront conventions. */
+.ps-charts-header-name{font-size:16px;font-weight:650;color:#303438;letter-spacing:.1px}
+.ps-charts-page .chart-intro{padding:7px 0 12px}.ps-charts-page .chart-intro h1{font-weight:450;font-size:37px;margin:7px 0 10px;letter-spacing:-.5px}
+.ps-charts-page .chart-intro p{font-size:14px;color:#606970}
+.ps-charts-page .chart-section{margin:27px 0 35px}
+.ps-charts-page .section-head h2{font-size:22px;font-weight:650}
+.ps-charts-page .chart-disclaimer{font-size:12px;color:#67727c}
+.ps-charts-page .chart-list{border:0;border-radius:0}
+.ps-charts-page .chart-row{padding:15px 0;border-bottom:1px solid #eef0f2}
+.ps-charts-page .chart-rank{font-size:16px;color:#495157}
+.ps-charts-page .chart-icon{width:67px;height:67px;border-radius:15px}
+.ps-charts-page .chart-info strong{font-weight:600;font-size:14px}
+.ps-charts-page .chart-info small{font-size:12px}
+.ps-charts-page .chart-rating{color:#5c6978;font-size:12px}
+.ps-charts-page .chart-empty{background:#f8fafc;border:0;border-radius:16px}
+@media(max-width:700px){.ps-home-header .ps-brand-name{display:none}.ps-charts-page .chart-intro h1{font-size:34px}.ps-charts-page .chart-row{gap:12px}.ps-charts-page .chart-icon{width:63px;height:63px}}
