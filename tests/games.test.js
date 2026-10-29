@@ -180,7 +180,7 @@ test('seven app store pages display real assets, appropriate status and secure d
  }
  const js=read('games/detail-ui.js');assert.match(js,/ArrowRight/);assert.match(js,/touchstart/);
 });
-test('top charts, original routes and moderated user reviews are wired without fake user scores',async()=>{
+test('top charts, original routes and instantly published real-user reviews are wired without fake user scores',async()=>{
  const home=read('games/index.html'),routes=JSON.parse(read('vercel.json')).rewrites;
  assert.match(home,/Top charts/);
  assert.match(home,/ABSZ Picks|Studio picks/);
@@ -198,7 +198,7 @@ test('top charts, original routes and moderated user reviews are wired without f
  const api=read('api/game-reviews.js');
  assert.match(api,/status='approved'/);
  assert.match(api,/await requireAdmin\(req\)/);
- assert.match(api,/DEFAULT 'pending'/);
+ assert.match(api,/DEFAULT 'approved'/);
  assert.match(api,/websiteSession\(req,false\)/);
  assert.doesNotMatch(home,/55M reviews|500M downloads/);
  assert.ok(fs.existsSync(new URL('../games/moderation/index.html',import.meta.url)));
@@ -240,10 +240,10 @@ test('top charts are curated honestly until real community ratings accumulate',(
  const html=read('games/charts/index.html'),js=read('games/charts.js'),index=read('games/index.html');
  assert.match(index,/Top charts/);assert.match(index,/\/games\/charts\//);
  assert.match(html,/Studio picks/);assert.match(html,/Community favourites/);
- assert.match(html,/not a claim of most downloads/);assert.match(html,/at least 3 approved community reviews/);
+ assert.match(html,/not a claim of most downloads/);assert.match(html,/at least 3 published community reviews/);
  assert.match(js,/Number\(x\.count\)>=3/);
 });
-test('reviews are submitted by users, moderated by real site admins and not fabricated in markup',async()=>{
+test('reviews are submitted by signed-in users and are not fabricated in markup',async()=>{
  const utils=await import('../api/_game-review-utils.js');
  const valid={game:'my-hero-clash-with-monsters',name:'Player123',rating:5,comment:'I enjoy the friendly adventures.',confirmPlayed:true};
  assert.equal(typeof utils.validateReview(valid),'object');
@@ -285,11 +285,11 @@ test('all seven redesigned detail pages follow app-store layout with one real re
  const js=read('games/playstore.js');new (await import('node:vm')).Script(js);
 });
 
-test('game reviews require signed-in ABSZ account and preserve moderation without anonymous publication',()=>{
+test('game reviews require signed-in ABSZ account without anonymous publication',()=>{
 const api=read('api/game-reviews.js'),auth=read('api/_website-auth.js'),frontend=read('games/reviews.js');
 assert.match(api,/websiteSession\(req,false\)/);assert.match(api,/account_key IS NOT NULL/);assert.match(api,/ON CONFLICT\(game_slug,account_key\)/);
 assert.match(auth,/absz_website/);assert.match(auth,/absz_market/);assert.match(auth,/timingSafeEqual/);
-assert.match(frontend,/Pending admin approval/);assert.match(frontend,/games\/account\//);
+assert.match(frontend,/published and visible/);assert.match(frontend,/games\/account\//);
 for(const slug of ['my-hero-clash-with-monsters','absz-dungeon-go','my-monster-and-dungeon','last-haven']){const page=read('games/app/'+slug+'/index.html');assert.match(page,/data-review-auth/);assert.match(page,/data-review-form hidden/);assert.doesNotMatch(page,/name="name" autocomplete="nickname"/)}
 const cfg=JSON.parse(read('vercel.json'));assert.ok(cfg.rewrites.some(r=>r.source==='/games/account/'&&r.destination==='/games/account/index.html'));
 });
@@ -298,4 +298,18 @@ const api=read('api/web-auth.js'),auth=read('api/_website-auth.js');
 assert.match(api,/bcrypt.hash/);assert.match(api,/bcrypt.compare/);assert.match(api,/authRateLimit/);assert.match(api,/requireSameOrigin/);
 assert.match(auth,/HttpOnly; Secure; SameSite=Lax/);
 for(const js of ['games/account.js','games/reviews.js','games/moderate.js'])new (await import('node:vm')).Script(read(js));
+});
+
+test('registered player reviews publish instantly and refresh public ratings',()=>{
+ const api=read('api/game-reviews.js'),ui=read('games/reviews.js');
+ assert.match(api,/status='approved',created_at=now\(\),approved_at=now\(\)/);
+ assert.match(api,/fingerprint,status,account_key,approved_at/);
+ assert.match(api,/published:true,review_id/);
+ assert.match(api,/WHERE status='pending' AND account_key IS NOT NULL/);
+ assert.match(api,/websiteSession\(req,false\)/);
+ assert.match(ui,/loadPublic\(\),loadAccount\(\)/);
+ assert.doesNotMatch(ui,/Pending admin approval/);
+ const html=read('games/app/my-hero-clash-with-monsters/index.html');
+ assert.match(html,/Your review appears immediately after submission/);
+ assert.doesNotMatch(html,/published after moderation/);
 });
